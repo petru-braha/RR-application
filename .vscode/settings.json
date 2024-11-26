@@ -1,0 +1,8 @@
+{
+    "files.associations": {
+        "apps.h": "c",
+        "pservice_base": "cpp",
+        "types.h": "c",
+        "printer.h": "c"
+    }
+}
