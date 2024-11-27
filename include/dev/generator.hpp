@@ -1,11 +1,8 @@
 #ifndef _0GENERATOR0_
 #define _0GENERATOR0_
 
-#include "pservice_base"
 #include <thread>
 #include <random>
-
-STD_PSERVICE_BEGIN
 
 class random_generator
 {
@@ -38,5 +35,4 @@ public:
     }
 };
 
-STD_PSERVICE_END
 #endif
