@@ -7,7 +7,7 @@ You can find the romanian verion of this document [here](./docs/README_RO.md).
 0. [id_train, time_departure_estimated, time_arrival_estimated, status] routes(location_departure, location_arrival)
 1. [id_train, time_departure_confirmed, location_arrival] departures(location_departure)
 2. [id_train, time_arrival_confirmed, location_departure] arrivals(location_arrival)
-3. void quit()
+4. void quit()
 
 - function model: return_type name_function parameter(s)
 - estimated times = initial times defined by the generated schedule
@@ -17,6 +17,7 @@ You can find the romanian verion of this document [here](./docs/README_RO.md).
 
 ## Description
 
+- the time of the application is the current Romania time.
 - an itinerary is from point A to point B and no other points exists between these two. If that would be the case then extra complexity would be added to the logic of the application.
 
 - locations types
@@ -37,8 +38,16 @@ You can find the romanian verion of this document [here](./docs/README_RO.md).
 - departures/arrivals status = bool returned by a function that takes an id_train - if it has left or not (analog arrived). 
 - the activities described seem to be a service used by customers who want to travel, not who are traveling. It seems strange to me that a non-traveling customer would give information about delays. How would they know? I expect the customer to be so, on a train or not. I suppose only if he is on the train can he send that information. The delay can be influenced by a late departure or the train staff announcement (true announcement all the time). Therefore, a client will be queried by the server at first if it is on a train. If yes, then it will send the minutes by which it will be late (in case of a delay announcement; arrival estimate is inferred from departure estimate + announced delays). 
 
+- what if two clients reports different things? they can report for past, present and futures trains. the previous statement limited the scope of this question to the present trains. (reporting problem)
+
 - running condition of the server should always be true with an exception: mentenance for administration. this allows the administrator (and only him) to shut down the server.
 - random geneeration of routes
+
+- ip addresses
+    - 127.0.0.1 locally
+    - one connection to my server of the faculty
+    - one more connection when my pc is up
+- port = 1010
 
 ## Recap
 
@@ -51,28 +60,64 @@ You can find the romanian verion of this document [here](./docs/README_RO.md).
         - arrival estimation
 
 - data
-    - itineraries
+    - routes
     - departure/arrival status
     - delays
     - arrival estimation
 
 ## To do
 
-- concurency strategies:
-	- child process for each client
-	- thread for each client
-	- prethreaded execution
-- multiplexing will be achieved only with the select() primitive
+0. correctness
+1. speed
 
-- ask the professor about
-- make it portable? it is only linux now. 
-- signal receive?
-- tcp - sends data from server to client
-- udp - sends command from client to server
+- suppose 100.000 users will connect to my server now.
+
+0. tcp over udp: if the data sent by the client is altered => wrong number of minutes => the schedule becomes incorrect. it's okay if the client's query is not received from the first attempt, but the data received by him has to be not affected and accurate.
+
+- decision:
+a. client uses tcp to server when sending data
+b. client uses udp to server when sending queries
+c. server uses tcp to client when sending data
+
+1. concurency strategies:
+	- preforked execution
+	- prethreaded execution
+	- create child process for each client
+	- create thread for each client
+	- i/o multiplexing with blocking calls
+	- i/o multiplexing with non-blocking calls
+
+- using select() and unblocking I/O operations is the fastest strategy. how can i make it faster? (fastest <- course)
+
+- thread over child process
+	- smaller cost (course example of 50.000)
+	- there can be a lot of writes on the server data
+	- the child process will copy by ref but threads plays with the parent process' variables themselves
+
+- what to multiplex? in a non-concurent server multiplexing solves all their quieries. but since i'm threading the environement... it will still do the same thing. There will be a global I/O multiplexing, each thread accessing it.
+
+- decision:
+a. global file descriptors sets which will be manipulated by all threads
+
+- ask the professor about: signal - receive
+- final implementation idea: server prethreaded accept calls, a thread is added for any other client. i/o multiplexing
 
 ## Limitations
 
+client point of view
+- connect - uses the train
+- disconnect
+
+
 ## Future improvements
+
+- server key bug
+
+- see reporting problem
+
+- increase safety with two running servers: one on my computer, one on the faculty's server, every update on the main server will tcp its way to the second one
+
+- random generator std::hash<> bug
 
 ## Bibliography
 

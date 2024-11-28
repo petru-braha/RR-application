@@ -1,20 +1,7 @@
 #ifndef _0COMMON0_
 #define _0COMMON0_
 
-//------------------------------------------------
-// header files:
-
 #include <stdlib.h>
-#include <stdio.h>
-
-#include <sys/types.h>
-#include <sys/wait.h>
-#include <sys/stat.h>
-#include <unistd.h>
-#include <fcntl.h>
-
-#include <string.h>
-#include <errno.h>
 
 //------------------------------------------------
 // constants:

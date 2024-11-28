@@ -13,14 +13,14 @@ struct rr_time
     int minutes;
 };
 
-struct rr_itinerary
+struct rr_route
 {
     int id_train;
     int location_departure;
     int location_arrival;
-    rr_time time_departure;
-    rr_time time_arrival;
-    rr_status status;
+    struct rr_time time_departure;
+    struct rr_time time_arrival;
+    struct rr_status status;
 };
 
 #endif
