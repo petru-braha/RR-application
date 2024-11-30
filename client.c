@@ -14,15 +14,10 @@
 #include "include/shared.h"
 #include "include/printer.h"
 
-const int NO_FLAG = 0;
-
-const size_t BYTES_COMMAND_MAX = 20;
-const size_t BYTES_OUTCOME_MAX = 100;
-
 int sd_tcp, sd_udp;
 struct sockaddr_in skadd_server;
 
-int recv_command(char *command)
+static int recv_command(char *command)
 {
   bzero(command, BYTES_COMMAND_MAX);
   int bytes = read(STDIN_FILENO, command, BYTES_COMMAND_MAX);
@@ -38,7 +33,7 @@ int send_command(char *command)
   int bytes = 0;
 
   // tcp communication if the client sends data
-  //if (0 == strcmp(command, "report"))
+  if (0 == strcmp(command, "report"))
   {
     bytes = write(sd_tcp, command, BYTES_COMMAND_MAX);
     return bytes;
@@ -63,25 +58,30 @@ int main(int argc, char *argv[])
   // base case
   if (argc != 3)
   {
+    // no call required it is already a failing case
     printf("syntax: <ip address> <port>.\n");
     return EXIT_FAILURE;
   }
 
   // ux
-  printf("welcome dear client.\n");
+  call(printf("welcome dear client.\n"));
+  call(printf("please type in your queries.\n\n"));
 
   // tcp and udp protocols initializations
-  int port = atoi(argv[2]);
-  sd_tcp = socket(AF_INET, SOCK_STREAM, 0);
-  sd_udp = socket(AF_INET, SOCK_DGRAM, 0);
-  call_var(sd_tcp);
-  call_var(sd_udp);
-
+  uint16_t port0 = atoi(argv[2]), port1 = port0 + 1;
   skadd_server.sin_family = AF_INET;
   skadd_server.sin_addr.s_addr = inet_addr(argv[1]);
-  skadd_server.sin_port = htons(port);
 
+  // tcp
+  skadd_server.sin_port = htons(port0);
+  sd_tcp = socket(AF_INET, SOCK_STREAM, 0);
+  call_var(sd_tcp);
   call(connect(sd_tcp, (struct sockaddr *)&skadd_server,
+               sizeof(struct sockaddr)));
+  // udp
+  sd_udp = socket(AF_INET, SOCK_DGRAM, 0);
+  call_var(sd_udp);
+  call(connect(sd_udp, (struct sockaddr *)&skadd_server,
                sizeof(struct sockaddr)));
 
   char command[BYTES_COMMAND_MAX];
@@ -91,8 +91,8 @@ int main(int argc, char *argv[])
   {
     call(recv_command(command));
     call(send_command(command));
-    call(recv_outcome(outcome));
-    printf("%s\n", outcome);
+    // call(recv_outcome(outcome));
+    // call(printf("%s\n", outcome));
     condition = strcmp(command, "quit");
   }
 

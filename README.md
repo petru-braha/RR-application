@@ -97,7 +97,9 @@ c. server uses tcp to client when sending data
 - what to multiplex? in a non-concurent server multiplexing solves all their quieries. but since i'm threading the environement... it will still do the same thing. There will be a global I/O multiplexing, each thread accessing it.
 
 - decision:
-a. global file descriptors sets which will be manipulated by all threads
+a. the sever uses i/o multiplexing and serves the ready file descriptors concurently using threads
+
+- what about prethreaded VS thread per client?
 
 - ask the professor about: signal - receive
 - final implementation idea: server prethreaded accept calls, a thread is added for any other client. i/o multiplexing

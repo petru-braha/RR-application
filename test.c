@@ -1,207 +1,138 @@
+#include <unistd.h>
+#include <sys/time.h>
+#include <sys/socket.h>
+#include <sys/select.h>
+#include <sys/types.h>
+#include <arpa/inet.h>
+#include <netinet/in.h>
+
+#include <stdlib.h>
 #include <stdio.h>
 #include <errno.h>
-#include <unistd.h>
-#include <pthread.h>
-
 #include <string.h>
-#include <stdbool.h>
-
-#include <sys/socket.h>
-#include <sys/time.h>
-#include <sys/types.h>
-#include <sys/fcntl.h>
-#include <stdbool.h>
-
-#include <netinet/in.h>
-#include <arpa/inet.h>
 
 #include "include/shared.h"
-#include "include/command.h"
 
-#define CHILD 0
-#define PARNT 1
-#define PORT 2728
+const uint16_t port0 = 2970;
+struct timeval TV = {2, 0};
 
-// a server should always be online
-bool running_condition()
+const int ONE_CLIENT_ONLY = 1;
+
+typedef struct
 {
-    int fd = open("include/dev/key.txt", O_RDONLY);
-    call_var(fd);
+  fd_set container;
+  int count;
+} rr_fd;
 
-    char key = 0;
-    call(read(fd, &key, 1));
-    call(close(fd));
+// copies the sets, no need to do it mannually
+static void recv_command(char *command, rr_fd tcp_read_set, rr_fd udp_read_set, void *skadd_udp, socklen_t *len)
+{
+  bzero(command, sizeof(command));
+  call(select(tcp_read_set.count, &tcp_read_set.container, NULL, NULL, &TV));
+  for (int fd = 0; fd < tcp_read_set.count; fd++)
+    if (FD_ISSET(fd, &tcp_read_set.container))
+    {
+      call(read(fd, command, BYTES_COMMAND_MAX));
+      return;
+    }
 
-    return key != '0';
+  call(select(udp_read_set.count, &udp_read_set.container, NULL, NULL, &TV));
+  for (int fd = 0; fd < udp_read_set.count; fd++)
+    if (FD_ISSET(fd, &udp_read_set.container))
+    {
+      call(recvfrom(fd, command, BYTES_COMMAND_MAX, NO_FLAG, (struct sockaddr *)skadd_udp, len));
+      return;
+    }
 }
 
-char *conv_addr(struct sockaddr_in address)
-{
-    static char str[25];
-    char port[7];
-
-    /* adresa IP a clientului */
-    strcpy(str, inet_ntoa(address.sin_addr));
-    /* portul utilizat de client */
-    bzero(port, 7);
-    sprintf(port, ":%d", ntohs(address.sin_port));
-    strcat(str, port);
-    return (str);
-}
-
-/*
-char *iteration(const char *const command, const int command_size)
-{
-  int pipe_server_child[2];
-  int socket_child_server[2];
-
-  pipe(pipe_server_child);
-  socketpair(AF_UNIX, SOCK_STREAM, 0, socket_child_server);
-
-  char *output = 0;
-
-  // parent
-  pid_t pid = fork();
-  if (pid)
-  {
-    close(socket_child_server[CHILD]);
-    close(pipe_server_child[READ]);
-
-    write(pipe_server_child[WRIT], command, command_size);
-
-    char number[3];
-    read(socket_child_server[1], number, 2);
-    number[2] = 0;
-    int output_size = atoi(number);
-    char buffer[MAX_OUTPUT_SIZE];
-    read(socket_child_server[1], buffer, output_size);
-    buffer[output_size] = 0;
-    output = (char *)malloc(2 + output_size);
-    strcpy(output, number);
-    strcat(output, buffer);
-
-    // patch
-    if (strstr(buffer, "welcome"))
-      strcpy(server_username, buffer + 9);
-    if ('!' != buffer[strlen(buffer) - 1])
-      server_username[strlen(server_username) - 1] = 0;
-    if (strstr(buffer, "we will miss"))
-      for (size_t i = 0; i < MAX_STRING_SIZE; i++)
-        server_username[i] = 0;
-
-    close(pipe_server_child[WRIT]);
-    close(socket_child_server[PARNT]);
-
-    int child_return_value = -1;
-    wait(&child_return_value);
-  }
-
-  // child
-  else
-  {
-    close(pipe_server_child[WRIT]);
-    close(socket_child_server[PARNT]);
-
-    char buffer[MAX_COMMAND_SIZE];
-    read(pipe_server_child[0], buffer, command_size);
-    buffer[command_size] = 0;
-
-    char *message = parse_command(buffer);
-    write(socket_child_server[0], message, strlen(message));
-    free(message);
-
-    close(pipe_server_child[READ]);
-    close(socket_child_server[CHILD]);
-    exit(EXIT_SUCCESS);
-  }
-
-  return output;
-}
-*/
-
+// alternates between tcp and udp
+// receives (doesn't send) commands for just one client => no concurency and no multiplexing
 int main()
 {
-    struct sockaddr_in skadd_server;
-    struct sockaddr_in skadd_client;
-    bzero(&skadd_server, sizeof(skadd_server));
-    bzero(&skadd_client, sizeof(skadd_client));
+  printf("the server is online.\n\n");
 
-    int sd_server_tcp = socket(AF_INET, SOCK_STREAM, 0);
-    int sd_server_udp = socket(AF_INET, SOCK_DGRAM, 0);
-    call_var(sd_server_tcp);
-    call_var(sd_server_udp);
+  // tcp first socket
+  int sd_tcp = 0;
+  sd_tcp = socket(AF_INET, SOCK_STREAM, 0);
+  call_var(sd_tcp);
 
-    int option = 1;
-    setsockopt(sd_server_tcp, SOL_SOCKET, SO_REUSEADDR, &option, sizeof(option));
-    skadd_server.sin_family = AF_INET;
-    skadd_server.sin_addr.s_addr = htonl(INADDR_ANY);
-    skadd_server.sin_port = htons(PORT);
+  int opt = 1;
+  call(setsockopt(sd_tcp, SOL_SOCKET,
+                  SO_REUSEADDR, &opt, sizeof(opt)));
 
-    call(bind(sd_server_tcp, (struct sockaddr*)&skadd_server, sizeof(struct sockaddr)));
-    call(listen(sd_server_tcp, 5));
+  struct sockaddr_in skadd_server;
+  bzero(&skadd_server, sizeof(skadd_server));
+  skadd_server.sin_family = AF_INET;
+  skadd_server.sin_addr.s_addr = htonl(INADDR_ANY);
+  skadd_server.sin_port = htons(port0);
 
-    fd_set actfds;
-    FD_ZERO(&actfds);
-    fd_set readfds;
-    FD_SET(sd_server_tcp, &actfds);
+  call(bind(sd_tcp, (struct sockaddr *)&skadd_server,
+            sizeof(struct sockaddr)));
+  call(listen(sd_tcp, ONE_CLIENT_ONLY));
 
-    struct timeval tv;
-    tv.tv_sec = 1;
-    tv.tv_usec = 0;
+  // loop
+  struct sockaddr_in skadd_client;
+  socklen_t length = sizeof(skadd_client);
+  bzero(&skadd_client, length);
 
-    printf("the server is online ba.\n\n");
+  // tcp
+  int sd_client_tcp =
+      accept(sd_tcp, (struct sockaddr *)&skadd_client,
+             &length);
+  call_var(sd_client_tcp);
 
-    int count_fd = sd_server_tcp + 1;
-    
-    for (; running_condition();)
-    {
-      printf("%d", running_condition());
-    }
-    
-    printf("%d gata executia\n", running_condition());
-    return 0;
-    
-    for (; running_condition();)
-    {
-        /* ajustam multimea descriptorilor efectiv utilizati */
-        bcopy((char *)&actfds, (char *)&readfds, sizeof(readfds));
-        call(select(count_fd, &readfds, NULL, NULL, &tv));
+  // udp
+  int sd_client_udp = socket(AF_INET, SOCK_DGRAM, 0);
+  call_var(sd_client_udp);
+  call(bind(sd_client_udp,
+            (struct sockaddr *)&skadd_server,
+            sizeof(struct sockaddr)));
 
-        /* vedem daca e pregatit socketul pentru a-i accepta pe clienti */
-        if (FD_ISSET(sd_server_tcp, &readfds))
-        {
-            /* pregatirea structurii client */
-            int len = sizeof(skadd_client);
-            bzero(&skadd_client, sizeof(skadd_client));
+  // container
+  fd_set tcp_c;
+  fd_set udp_c;
+  FD_ZERO(&tcp_c);
+  FD_ZERO(&udp_c);
+  FD_SET(sd_client_tcp, &tcp_c);
+  FD_SET(sd_client_udp, &udp_c);
 
-            int std_client_tcp = accept(sd_server_tcp, (struct sockaddr*)&skadd_client, &len);
-            call_var(std_client_tcp);
+  // rr_fd
+  rr_fd tcp_read_set = {tcp_c, sd_client_tcp + 1};
+  rr_fd udp_read_set = {udp_c, sd_client_udp + 1};
 
-            if (count_fd <= std_client_tcp)
-                count_fd = std_client_tcp + 1;
+  // read commands
+  char command[BYTES_COMMAND_MAX];
+/*
+  read(sd_client_tcp, command, BYTES_COMMAND_MAX);
+  printf("\"%s\".\n", command);
+  recvfrom(sd_client_udp, command, BYTES_COMMAND_MAX, NO_FLAG, (struct sockaddr *)&skadd_client, &length);
+  printf("\"%s\".\n", command);
+*/
+  for (int condition = 1; condition;)
+  {
+    recv_command(command, tcp_read_set, udp_read_set, &skadd_client, &length);
+    if (0 == command[0])
+      continue;
+    call(printf("\"%s\".\n", command));
+    condition = strcmp(command, "quit");
+  }
 
-            /* includem in lista de descriptori activi si acest socket */
-            FD_SET(std_client_tcp, &actfds);
+  call(close(sd_client_tcp));
+  call(close(sd_client_udp));
+  call(close(sd_tcp));
 
-            printf("[server] S-a conectat clientul cu descriptorul %d, de la adresa %s.\n", std_client_tcp, conv_addr(skadd_client));
-            fflush(stdout);
-        }
-
-        /* vedem daca e pregatit vreun socket client pentru a trimite raspunsul */
-        for (int fd = 0; fd < count_fd; fd++)
-        {
-            if (fd != sd_server_tcp && FD_ISSET(fd, &readfds))
-            {
-                //if (sayHello(fd))
-                {
-                    printf("[server] S-a deconectat clientul cu descriptorul %d.\n", fd);
-                    close(fd);
-                    FD_CLR(fd, &actfds);
-                }
-            }
-        }
-    }
-
-    printf("the server is offline.\n");
-    return EXIT_SUCCESS;
+  printf("the server is offline.\n");
+  return EXIT_SUCCESS;
 }
+
+/* questions:
+0. sizeof(struct sockaddr) / sizeof(skadd_server) ?
+1. order problem of commands
+
+- notes:
+- for each client set up sd_tcp and sd_udp
+- port0 is for the first socket of tcp
+- port1 is for the sockets of udp
+2. multiple clients will need those ports => SO_REUSE_ADDRESS
+
+*/
