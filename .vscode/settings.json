@@ -16,7 +16,9 @@
     "socket.h": "c",
     "pthread.h": "c",
     "string_view": "c",
-    "time_types.h": "c"
+    "time_types.h": "c",
+    "stdio.h": "c",
+    "chrono": "c"
   },
   "C_Cpp_Runner.cCompilerPath": "gcc",
   "C_Cpp_Runner.cppCompilerPath": "g++",

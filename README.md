@@ -110,6 +110,8 @@ client point of view
 - connect - uses the train
 - disconnect
 
+- not portable for windows
+- 1024 clients at once
 
 ## Future improvements
 
@@ -120,6 +122,19 @@ client point of view
 - increase safety with two running servers: one on my computer, one on the faculty's server, every update on the main server will tcp its way to the second one
 
 - random generator std::hash<> bug
+
+## Questions
+
+- sizeof(struct sockaddr) or sizeof(skadd_server) ?
+- POSIX standard allows only 1024 => 1024 * 98 > 100.000
+
+## Notes
+- for each client set up sd_tcp and sd_udp
+
+- first client report
+- second client report
+- second client routes
+- first client routes
 
 ## Bibliography
 

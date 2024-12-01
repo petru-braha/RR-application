@@ -18,10 +18,10 @@
 #include "include/shared.h"
 #include "include/command.h"
 
-#define CHILD 0
-#define PARNT 1
 const uint16_t port0 = 2970;
-const uint16_t port1 = 2971;
+struct timeval TV = {2, 0};
+pthread_t thread[100];
+const int ONE_CLIENT_ONLY = 1;
 
 struct rr_thread
 {
@@ -29,7 +29,11 @@ struct rr_thread
   struct sockaddr_in skadd_client;
 };
 
-pthread_t thread[100];
+typedef struct
+{
+  fd_set container;
+  int count;
+} rr_fd;
 
 // a server should always be online
 static bool running_condition()
