@@ -3,7 +3,6 @@
 \usepackage[T1]{fontenc}
 \usepackage{graphicx}
 
-% If you use the hyperref package, please uncomment the following two lines
 % to display URLs in blue roman font according to Springer's eBook style:
 %\usepackage{color}
 %\renewcommand\UrlFont{\color{blue}\rmfamily}
@@ -12,13 +11,7 @@
 \begin{document}
 \title{Computer Networks Project \\ Romanian railways}
 
-%
-%\titlerunning{Abbreviated paper title}
-% If the paper title is too long for the running head, you can set
-% an abbreviated paper title here
-%
-
-\author{P. Braha\inst{1}\orcidID{0000-1111-2222-3333}}
+\author{P. Braha\inst{1}\orcidID{0009-0001-3636-2455}}
 \authorrunning{F. Author et al.}
 \institute{Alexandru Ioan Cuza University, Iasi IS 700221, Romania
 \email{petrubraha@gmail.com}\\
@@ -26,7 +19,7 @@
 
 \maketitle
 %
-\begin{abstract}
+\begin{abstract} This work contains an overview of client-server paradigm, and a custom implementation of the application level 
 The abstract should briefly summarize the contents of the paper in
 150--250 words.
 
@@ -38,12 +31,21 @@ The abstract should briefly summarize the contents of the paper in
 
 \section{Introduction}
 
-\subsection{Motivation}
-Please note that the first paragraph of a section or subsection is
-not indented. The first paragraph that follows a table, figure,
-equation etc. does not need an indent, either.
+There will be presented the application level's API and some optimizations for speed
 
-Subsequent paragraphs, however, are indented.
+requirements
+application level
+
+
+
+transport level
+speed 
+corectness 
+security
+
+\subsection{Motivation}
+
+Laboratory work. 
 
 \subsubsection{Sample Heading (Third Level)} Only two levels of
 headings should be numbered. Lower level headings remain unnumbered;
@@ -125,6 +127,39 @@ relevant to the content of this article. Or: Author A has received research
 grants from Company W. Author B has received a speaker honorarium from
 Company X and owns stock in Company Y. Author C is a member of committee Z.
 \end{credits}
+
+\section{requireemnts}
+
+\section{requirments}
+
+Create an application that provides or updates real time information from all registered customers for: train schedule, departure status, delays and estimated arrival. The server reads the data from XML files and updates the data (delays and estimated arrivals) on clients request. All the logic will be realized in the server, the client just asks for information about departures/arrivals and sends information to the server about possible delays and estimated arrivals.
+
+
+- sending from the server the information about the trains running on the day
+- sending from the server information about departures in the next hour (according to plan, late by x min) only on request of a client
+- sending from the server information about arrivals in the next hour (according to plan, x min late, x min early) only on request of a client
+
+\section{application level}
+
+describe the api
+
+\section{transport level}
+
+tcp and udp protocol
+
+\section{implementation}
+
+\subsection{speed}
+
+tcp/udp
+i/o multiplexing
+concurrency
+
+\subsection{corectness}
+
+tcp protocol
+
+\subsection{security}
 
 %%------------------------------------------------
 %%------------------------------------------------

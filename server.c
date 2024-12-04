@@ -67,37 +67,36 @@ void *multiplexing1(void *);
 // main thread
 int main()
 {
-  struct sockaddr_in skadd_server;
-  pthread_t th[COUNT_CLIENT_MAX];
-
+  FD_ZERO(&descriptors.container);
   int sd_listen = socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK, 0);
   call_var(sd_listen);
+  int option = 1;
+  call(setsockopt(sd_listen, SOL_SOCKET, SO_REUSEADDR, &option, sizeof(option)));
 
-  // int option = 1;
-  // setsockopt(sd, SOL_SOCKET, SO_REUSEADDR, &option, sizeof(option));
-
+  struct sockaddr_in skadd_server;
   skadd_server.sin_family = AF_INET;
   skadd_server.sin_addr.s_addr = htonl(INADDR_ANY);
   skadd_server.sin_port = htons(port);
 
-  call(bind(sd_listen, (struct sockaddr *)&skadd_server, sizeof(struct sockaddr)) == -1);
+  call(bind(sd_listen, (struct sockaddr *)&skadd_server, sizeof(struct sockaddr)));
   call(listen(sd_listen, COUNT_CLIENT_MAX));
 
-  struct sockaddr_in skadd_client;
-  int length = sizeof(skadd_client);
+  // struct sockaddr_in skadd_client;
+  // int length = sizeof(skadd_client);
 
   // loops: i/o multiplexing and non-blocking accepts
   pthread_t multiplexing_thread;
   call0(pthread_create(&multiplexing_thread, NULL, &multiplexing, NULL));
 
-  printf("the server is online.\n\n");
+  call(printf("the server is online.\n\n"));
   for (; running_condition();)
   {
-    int sd_client = accept(sd_listen, (struct sockaddr *)&skadd_client, &length);
+    // int sd_client = accept(sd_listen, (struct sockaddr *)&skadd_client, &length);
+    int sd_client = accept(sd_listen, NULL, NULL);
     call_noblock(sd_client);
     if (-1 == sd_client)
       continue;
-    call(ioctl(sd_client, FIONBIO));
+    call(ioctl(sd_client, FIONBIO, &option));
 
     FD_SET(sd_client, &descriptors.container);
     if (sd_client >= descriptors.count)
@@ -113,7 +112,7 @@ int main()
     }
 
   call(close(sd_listen));
-  printf("the server is offline.\n\n");
+  call(printf("the server is offline.\n\n"));
   return EXIT_SUCCESS;
 }
 
@@ -127,7 +126,7 @@ void *serve_client(int sd)
 
   char command[BYTES_COMMAND_MAX];
   call(read(sd, command, BYTES_COMMAND_MAX));
-  printf("debug: \"%s\" %d.\n", command, sd);
+  // printf("debug: \"%s\" %d.\n", command, sd);
 
   char outcome[BYTES_OUTCOME_MAX];
   strcpy(outcome, "raspuns la ");
@@ -147,11 +146,17 @@ void *multiplexing(void *)
 {
   for (; running_condition();)
   {
-    fd_set tcp_fd = descriptors.container;
-    select(descriptors.count, &tcp_fd, NULL, NULL, &TV);
-    for (int sd = 4; sd < descriptors.count; sd++)
+    fd_set tcp_fd;
+    memcpy(&tcp_fd, &descriptors.container, sizeof(descriptors.container));
+
+    int count_selected = select(descriptors.count, &tcp_fd, NULL, NULL, &TV);
+    call_var(count_selected);
+    for (int sd = 4; sd < descriptors.count && count_selected; sd++)
       if (FD_ISSET(sd, &tcp_fd))
+      {
         serve_client(sd);
+        count_selected--;
+      }
   }
 
   return NULL;
