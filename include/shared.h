@@ -48,11 +48,20 @@ char *convert_line(const char *const line)
         exit(EXIT_FAILURE);                         \
     }
 
-#define call_var(x)                                                \
-    if (x < 0)                                                     \
-    {                                                              \
-        printf("line %d error - %s\n", __LINE__, strerror(errno)); \
-        exit(EXIT_FAILURE);                                        \
+#define call0(x)                                    \
+    if (x != 0)                                     \
+    {                                               \
+        printf("line %d error: ", __LINE__);        \
+        print_function_name(x);                     \
+        printf(" failed - %s.\n", strerror(errno)); \
+        exit(EXIT_FAILURE);                         \
+    }
+
+#define call_var(x)                                                 \
+    if (x < 0)                                                      \
+    {                                                               \
+        printf("line %d error - %s.\n", __LINE__, strerror(errno)); \
+        exit(EXIT_FAILURE);                                         \
     }
 
 #define call_noexit(x)                              \
@@ -63,10 +72,17 @@ char *convert_line(const char *const line)
         printf(" failed - %s.\n", strerror(errno)); \
     }
 
-#define error()                                               \
-    {                                                         \
-        printf("error at %d: %s", __LINE__, strerror(errno)); \
-        exit(EXIT_FAILURE);                                   \
+#define call_noblock(x)                                 \
+    if (x < 0)                                          \
+    {                                                   \
+        if (EWOULDBLOCK != errno)                       \
+        {                                               \
+            printf("line %d error: ", __LINE__);        \
+            print_function_name(x);                     \
+            printf(" failed - %s.\n", strerror(errno)); \
+            exit(EXIT_FAILURE);                         \
+        }                                               \
+        errno = 0;                                      \
     }
 
 #endif

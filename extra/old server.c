@@ -54,7 +54,7 @@ bool running_condition()
   return key != '0';
 }
 
-void multiplexing(struct sockaddr *skadd_udp, socklen_t *len);
+void multiplexing(struct sockaddr_in *skadd_udp, socklen_t *len);
 
 //------------------------------------------------
 //! start function
@@ -70,6 +70,7 @@ int main()
   int opt = 1;
   call(setsockopt(sd_tcp, SOL_SOCKET,
                   SO_REUSEADDR, &opt, sizeof(opt)));
+  opt++;
 
   struct sockaddr_in skadd_server;
   bzero(&skadd_server, sizeof(skadd_server));
@@ -90,9 +91,10 @@ int main()
   printf("the server is online.\n\n");
   for (; running_condition();)
   {
-    multiplexing((struct sockaddr *)&skadd_client, &length);
+    multiplexing(&skadd_client, &length);
 
     // tcp socket
+    bzero(&skadd_client, sizeof(skadd_client));
     int sd_client_tcp =
         accept4(sd_tcp, (struct sockaddr *)&skadd_client,
                 &length, SOCK_NONBLOCK);
@@ -150,7 +152,7 @@ int send_outcome(char *command, int sd)
   return write(sd, outcome, BYTES_OUTCOME_MAX);
 }
 
-void multiplexing(struct sockaddr *skadd_udp, socklen_t *len)
+void multiplexing(struct sockaddr_in *skadd_udp, socklen_t *len)
 {
   char command[BYTES_COMMAND_MAX];
 
@@ -160,21 +162,19 @@ void multiplexing(struct sockaddr *skadd_udp, socklen_t *len)
   for (int fd = 0; fd < udp_set.count; fd++)
     if (FD_ISSET(fd, &udp_ccopy))
     {
-      // bug discovered: the descriptors are switching up???????
-      printf("debug command - udp:\"%s\" %d %d\n", command, fd, protocol_pair[fd]);
-      printf("%d %d\n", 5, protocol_pair[5]);
-      printf("%d %d\n", 7, protocol_pair[7]);
-
+      // bug: skadd_udp is always null here
+      // bug: select() doesn't properly select
       call(recvfrom(fd, command, BYTES_COMMAND_MAX,
-                    NO_FLAG, skadd_udp, len));
-      send_outcome(command, protocol_pair[fd]);
+                    NO_FLAG, (struct sockaddr *)skadd_udp, len));
+      call(send_outcome(command, protocol_pair[fd]));
+      printf("debug command - udp:\"%s\" %d %d\n", command, fd, protocol_pair[fd]);
+      printf("%d %d\n", FD_ISSET(5, &udp_set.container), FD_ISSET(7, &udp_set.container));
 
       // close client
       if (0 == strcmp(command, "quit"))
       {
         FD_CLR(protocol_pair[fd], &tcp_set.container);
         FD_CLR(fd, &udp_set.container);
-        FD_CLR(fd, &udp_ccopy);
         call(close(protocol_pair[fd]));
         call(close(fd));
         protocol_pair[fd] = NO_PAIR;
@@ -188,7 +188,7 @@ void multiplexing(struct sockaddr *skadd_udp, socklen_t *len)
     if (FD_ISSET(fd, &tcp_ccopy))
     {
       call(read(fd, command, BYTES_COMMAND_MAX));
-      send_outcome(command, fd);
-      // printf("debug command - tcp:\"%s\"\n", command);
+      call(send_outcome(command, fd));
+      printf("debug command - tcp:\"%s\" %d\n", command, fd);
     }
 }

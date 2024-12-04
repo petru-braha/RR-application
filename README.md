@@ -49,6 +49,8 @@ You can find the romanian verion of this document [here](./docs/README_RO.md).
     - one more connection when my pc is up
 - port = 1010
 
+- observation! the file descriptors will never be ambigous! the client application doesn't allow it!
+
 ## Recap
 
 - the server
@@ -104,37 +106,31 @@ a. the sever uses i/o multiplexing and serves the ready file descriptors concure
 - ask the professor about: signal - receive
 - final implementation idea: server prethreaded accept calls, a thread is added for any other client. i/o multiplexing
 
-## Limitations
+## Future improvements
 
-client point of view
+- tcp/udp
+
+- increase safety with two running servers: one on my computer, one on the faculty's server, every update on the main server will tcp its way to the second one
+
+- random generator std::hash<> bug
 - connect - uses the train
 - disconnect
 
 - not portable for windows
 - 1024 clients at once
 
-## Future improvements
-
-- server key bug
-
-- see reporting problem
-
-- increase safety with two running servers: one on my computer, one on the faculty's server, every update on the main server will tcp its way to the second one
-
-- random generator std::hash<> bug
 
 ## Questions
 
 - sizeof(struct sockaddr) or sizeof(skadd_server) ?
 - POSIX standard allows only 1024 => 1024 * 98 > 100.000
+- what if server crashes?
+- what if client crashes?
 
 ## Notes
+
 - for each client set up sd_tcp and sd_udp
 
-- first client report
-- second client report
-- second client routes
-- first client routes
 
 ## Bibliography
 
