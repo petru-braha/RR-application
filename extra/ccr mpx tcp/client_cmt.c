@@ -33,7 +33,7 @@ int send_command(char *command)
   int bytes = 0;
 
   // tcp communication if the client sends data
-  if (0 == strcmp(command, "report"))
+  // if (0 == strcmp(command, "report"))
   {
     bytes = write(sd_tcp, command, BYTES_COMMAND_MAX);
     return bytes;
@@ -76,11 +76,11 @@ int main(int argc, char *argv[])
   call_var(sd_tcp);
   call(connect(sd_tcp, (struct sockaddr *)&skadd_server,
                sizeof(struct sockaddr)));
-  // udp
+  /* udp
   sd_udp = socket(AF_INET, SOCK_DGRAM, 0);
   call_var(sd_udp);
   call(connect(sd_udp, (struct sockaddr *)&skadd_server,
-               sizeof(struct sockaddr)));
+               sizeof(struct sockaddr)));*/
 
   // ux
   call(printf("welcome dear client.\n"));
@@ -97,7 +97,7 @@ int main(int argc, char *argv[])
     condition = strcmp(command, "quit");
   }
 
-  close(sd_tcp);
-  close(sd_udp);
+  call(close(sd_tcp));
+  // call(close(sd_udp));
   return EXIT_SUCCESS;
 }

@@ -11,13 +11,13 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 
-#include "include/shared.h"
-#include "include/printer.h"
+#include "../include/shared.h"
+#include "../include/printer.h"
 
 int sd_tcp, sd_udp;
 struct sockaddr_in skadd_server;
 
-static ssize_t recv_command(char *command)
+static int recv_command(char *command)
 {
   bzero(command, BYTES_COMMAND_MAX);
   int bytes = read(STDIN_FILENO, command, BYTES_COMMAND_MAX);
@@ -28,7 +28,7 @@ static ssize_t recv_command(char *command)
   return bytes;
 }
 
-ssize_t send_command(char *command)
+int send_command(char *command)
 {
   // tcp communication if the client sends data
   if (0 == strcmp(command, "report"))
@@ -43,7 +43,7 @@ ssize_t send_command(char *command)
 }
 
 // tcp return
-ssize_t recv_outcome(char *outcome, char *command)
+int recv_outcome(char *outcome, char *command)
 {
   bzero(outcome, BYTES_OUTCOME_MAX);
 
@@ -57,19 +57,11 @@ ssize_t recv_outcome(char *outcome, char *command)
                   (struct sockaddr *)&skadd_server, &length);
 }
 
-int main(int argc, char *argv[])
+int main()
 {
-  // base case
-  if (argc != 3)
-  {
-    // no call required it is already a failing case
-    printf("syntax: <ip address> <port>.\n");
-    return EXIT_FAILURE;
-  }
-
   skadd_server.sin_family = AF_INET;
-  skadd_server.sin_addr.s_addr = inet_addr(argv[1]);
-  skadd_server.sin_port = htons(atoi(argv[2]));
+  skadd_server.sin_addr.s_addr = inet_addr("127.0.0.1");
+  skadd_server.sin_port = htons(2970);
 
   // tcp
   sd_tcp = socket(AF_INET, SOCK_STREAM, 0);

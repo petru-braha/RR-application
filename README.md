@@ -67,10 +67,11 @@ You can find the romanian verion of this document [here](./docs/README_RO.md).
     - delays
     - arrival estimation
 
-## To do
+## Implementation
 
 0. correctness
 1. speed
+2. array from port to sd
 
 - suppose 100.000 users will connect to my server now.
 
@@ -98,7 +99,6 @@ c. server uses tcp to client when sending data
 
 - what to multiplex? in a non-concurent server multiplexing solves all their quieries. but since i'm threading the environement... it will still do the same thing. There will be a global I/O multiplexing, each thread accessing it.
 
-- decision:
 a. the sever uses i/o multiplexing and serves the ready file descriptors concurently using threads
 
 - what about prethreaded VS thread per client?
@@ -106,9 +106,13 @@ a. the sever uses i/o multiplexing and serves the ready file descriptors concure
 - ask the professor about: signal - receive
 - final implementation idea: server prethreaded accept calls, a thread is added for any other client. i/o multiplexing
 
-## Future improvements
+- send back only tcp? array of descriptors?
+- what if server crashes?
+- what if client crashes?
+- sizeof(struct sockaddr) or sizeof(skadd_server) ?
+- POSIX standard allows only 1024 => 1024 * 98 > 100.000
 
-- tcp/udp
+## To do / questions / future improvements
 
 - increase safety with two running servers: one on my computer, one on the faculty's server, every update on the main server will tcp its way to the second one
 
@@ -118,19 +122,13 @@ a. the sever uses i/o multiplexing and serves the ready file descriptors concure
 
 - not portable for windows
 - 1024 clients at once
-
-
-## Questions
-
-- sizeof(struct sockaddr) or sizeof(skadd_server) ?
-- POSIX standard allows only 1024 => 1024 * 98 > 100.000
-- what if server crashes?
-- what if client crashes?
+- identation
 
 ## Notes
 
 - for each client set up sd_tcp and sd_udp
-
+- it is not a bug: the value of the first file descriptor initialized can varry
+- to explain more here
 
 ## Bibliography
 

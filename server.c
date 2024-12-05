@@ -1,5 +1,7 @@
-// a concurrent server with i/o multiplexing
-#define _GNU_SOURCE
+/* server.c - a concurrent server with i/o multiplexing, and two transport protocols
+ * author - Braha Petru Bogdan - <petrubraha@gmail.com> (c)
+ * bibliography - see README.md file
+ */
 
 #include <unistd.h>
 #include <fcntl.h>
@@ -33,7 +35,6 @@ const uint16_t port = 2970;
 const int ONE_CLIENT_ONLY = 1;
 const int TWO_CLIENT_ONLY = 2;
 const int COUNT_CLIENT_MAX = 1024;
-// const int COUNT_CLIENT_MAX = 100000;
 
 typedef struct
 {
@@ -43,6 +44,8 @@ typedef struct
 
 struct timeval TV = {1, 0};
 rr_fd descriptors;
+
+int sd_udp = -1;
 
 //------------------------------------------------
 //! methods
@@ -62,16 +65,61 @@ bool running_condition()
 
 // a second main thread
 void *multiplexing(void *);
-void *multiplexing1(void *);
+
+// indexes are ports - 1024 (reserved ports)
+int port_to_socket[1024]; // COUNT_CLIENTS_MAX
+const int COUNT_RESERVED_PORTS = 1024;
+
+void *udp_communication(void *)
+{
+  char command[BYTES_COMMAND_MAX];
+  struct sockaddr_in skaddr_client;
+  socklen_t length = sizeof(skaddr_client);
+
+  for (; running_condition();)
+  {
+    int bytes =
+        recvfrom(sd_udp, command,
+                 BYTES_COMMAND_MAX, NO_FLAG,
+                 (struct sockaddr *)&skaddr_client,
+                 &length);
+
+    if (-1 == bytes)
+    {
+      if (EWOULDBLOCK == errno)
+      {
+        errno = 0;
+        continue;
+      }
+      else
+        call_var(-1);
+    }
+
+    char outcome[BYTES_OUTCOME_MAX];
+    strcpy(outcome, "raspuns UDP la ");
+    strcat(outcome, command);
+
+    sendto(sd_udp, outcome,
+           BYTES_OUTCOME_MAX,
+           NO_FLAG,
+           (struct sockaddr *)&skaddr_client,
+           length);
+  }
+}
+//------------------------------------------------
 
 // main thread
 int main()
 {
   FD_ZERO(&descriptors.container);
-  int sd_listen = socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK, 0);
+  int sd_listen =
+      socket(AF_INET,
+             SOCK_STREAM | SOCK_NONBLOCK, 0);
   call_var(sd_listen);
   int option = 1;
-  call(setsockopt(sd_listen, SOL_SOCKET, SO_REUSEADDR, &option, sizeof(option)));
+  call(setsockopt(sd_listen,
+                  SOL_SOCKET, SO_REUSEADDR,
+                  &option, sizeof(option)));
 
   struct sockaddr_in skadd_server;
   skadd_server.sin_family = AF_INET;
@@ -81,23 +129,35 @@ int main()
   call(bind(sd_listen, (struct sockaddr *)&skadd_server, sizeof(struct sockaddr)));
   call(listen(sd_listen, COUNT_CLIENT_MAX));
 
-  // struct sockaddr_in skadd_client;
-  // int length = sizeof(skadd_client);
+  // udp
+  sd_udp = socket(AF_INET, SOCK_DGRAM | SOCK_NONBLOCK, 0);
+  call_var(sd_udp);
+  call(bind(sd_udp, (struct sockaddr *)&skadd_server, sizeof(struct sockaddr)));
 
   // loops: i/o multiplexing and non-blocking accepts
+  pthread_t udp_thread;
+  call0(pthread_create(&udp_thread, NULL, &udp_communication, NULL));
   pthread_t multiplexing_thread;
   call0(pthread_create(&multiplexing_thread, NULL, &multiplexing, NULL));
 
   call(printf("the server is online.\n\n"));
   for (; running_condition();)
   {
-    // int sd_client = accept(sd_listen, (struct sockaddr *)&skadd_client, &length);
+    // error check
+    if (0 != errno)
+    {
+      printf("warning: %s.\n", strerror(errno));
+      errno = 0;
+    }
+
+    // accepted client
     int sd_client = accept(sd_listen, NULL, NULL);
     call_noblock(sd_client);
     if (-1 == sd_client)
       continue;
     call(ioctl(sd_client, FIONBIO, &option));
 
+    // sets
     FD_SET(sd_client, &descriptors.container);
     if (sd_client >= descriptors.count)
       descriptors.count = sd_client + 1;
@@ -105,13 +165,13 @@ int main()
 
   // the server closes, an admin key was used
   call0(pthread_join(multiplexing_thread, NULL));
+  call0(pthread_join(udp_thread, NULL));
   for (int fd = 0; fd < descriptors.count; fd++)
     if (FD_ISSET(fd, &descriptors.container))
-    {
-      // bad stuff
-    }
+      call(printf("warning: %d is not closed.\n", fd));
 
   call(close(sd_listen));
+  call(close(sd_udp));
   call(printf("the server is offline.\n\n"));
   return EXIT_SUCCESS;
 }
@@ -126,10 +186,9 @@ void *serve_client(int sd)
 
   char command[BYTES_COMMAND_MAX];
   call(read(sd, command, BYTES_COMMAND_MAX));
-  // printf("debug: \"%s\" %d.\n", command, sd);
 
   char outcome[BYTES_OUTCOME_MAX];
-  strcpy(outcome, "raspuns la ");
+  strcpy(outcome, "raspuns TCP la ");
   strcat(outcome, command);
   call(write(sd, outcome, BYTES_OUTCOME_MAX));
 
@@ -156,50 +215,6 @@ void *multiplexing(void *)
       {
         serve_client(sd);
         count_selected--;
-      }
-  }
-
-  return NULL;
-}
-
-//------------------------------------------------
-
-void *serve_client1(void *fd)
-{
-  pthread_detach(pthread_self());
-
-  int sd = *(int *)fd;
-  if (!FD_ISSET(sd, &descriptors.container))
-    return NULL;
-
-  char command[BYTES_COMMAND_MAX];
-  call(read(sd, command, BYTES_COMMAND_MAX));
-
-  char outcome[BYTES_OUTCOME_MAX];
-  strcpy(outcome, "raspuns la ");
-  strcat(outcome, command);
-  call(write(sd, outcome, BYTES_OUTCOME_MAX));
-
-  if (0 == strcmp(command, "quit"))
-  {
-    FD_CLR(sd, &descriptors.container);
-    call(close(sd));
-  }
-
-  return NULL;
-}
-
-void *multiplexing1(void *)
-{
-  for (; running_condition();)
-  {
-    fd_set tcp_fd = descriptors.container;
-    select(descriptors.count, &tcp_fd, NULL, NULL, &TV);
-    for (int sd = 4; sd < descriptors.count; sd++)
-      if (FD_ISSET(sd, &tcp_fd))
-      {
-        pthread_t t;
-        call0(pthread_create(&t, NULL, &serve_client1, &sd));
       }
   }
 

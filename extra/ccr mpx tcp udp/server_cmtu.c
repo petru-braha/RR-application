@@ -1,5 +1,5 @@
 // a concurrent server with i/o multiplexing, and two transport protocols
-// sends back only tcp
+#define _GNU_SOURCE
 
 #include <unistd.h>
 #include <fcntl.h>
@@ -65,51 +65,9 @@ bool running_condition()
 // a second main thread
 void *multiplexing(void *);
 
-// indexes are sockets
-#define COUNT_CLIENTS 1024
-struct sockaddr_in socket_to_address[COUNT_CLIENTS];
+// indexes are ports - 1024 (reserved ports)
+int port_to_socket[1024]; // COUNT_CLIENTS_MAX
 const int COUNT_RESERVED_PORTS = 1024;
-
-typedef struct
-{
-  char *command;
-  struct sockaddr_in skadd_client;
-} udp_help;
-
-int search_descriptor(struct sockaddr_in *skadd_client)
-{
-  for (int i = 0; i < COUNT_CLIENTS; i++)
-  {
-    if (socket_to_address[i].sin_addr.s_addr == skadd_client->sin_addr.s_addr)
-      if (socket_to_address[i].sin_port == skadd_client->sin_port)
-        return i;
-  }
-
-  return -1;
-}
-
-void *treat_udp(void *arg)
-{
-  pthread_detach(pthread_self());
-
-  udp_help structure = *(udp_help *)arg;
-  char *command = structure.command;
-
-  char outcome[BYTES_OUTCOME_MAX];
-  strcpy(outcome, "raspuns TCP la cerere UDP: ");
-  strcat(outcome, command);
-
-  int tcp_sd = search_descriptor(&structure.skadd_client) + 4;
-
-  printf("debug: %s\n", command);
-  printf("debug: %s:%u.\n", inet_ntoa(structure.skadd_client.sin_addr), ntohs(structure.skadd_client.sin_port));
-
-  if (-1 + 4 == tcp_sd)
-    printf("warning: received a command from strange location.\n");
-
-  call(write(tcp_sd, outcome, BYTES_OUTCOME_MAX));
-  return NULL;
-}
 
 void *udp_communication(void *)
 {
@@ -123,15 +81,21 @@ void *udp_communication(void *)
                          (struct sockaddr *)&skaddr_client, &length);
     if (-1 == bytes)
     {
-      if (EWOULDBLOCK != errno)
-        call_var(bytes);
-      errno = 0;
-      continue;
+      if (EWOULDBLOCK == errno)
+      {
+        errno = 0;
+        continue;
+      }
+      else
+        call_var(-1);
     }
 
-    udp_help arg = {command, skaddr_client};
-    pthread_t udp_thread;
-    pthread_create(&udp_thread, NULL, &treat_udp, &arg);
+    char outcome[BYTES_OUTCOME_MAX];
+    strcpy(outcome, "raspuns UDP la ");
+    strcat(outcome, command);
+
+    sendto(sd_udp, outcome, BYTES_OUTCOME_MAX, NO_FLAG,
+           (struct sockaddr *)&skaddr_client, length);
   }
 }
 
@@ -157,34 +121,29 @@ int main()
   call_var(sd_udp);
   call(bind(sd_udp, (struct sockaddr *)&skadd_server, sizeof(struct sockaddr)));
 
+  struct sockaddr_in skaddr_client;
+  socklen_t length = sizeof(skaddr_client);
+
   // loops: i/o multiplexing and non-blocking accepts
   pthread_t udp_thread;
   call0(pthread_create(&udp_thread, NULL, &udp_communication, NULL));
   pthread_t multiplexing_thread;
   call0(pthread_create(&multiplexing_thread, NULL, &multiplexing, NULL));
 
-  struct sockaddr_in skadd_client;
-  socklen_t length = sizeof(skadd_client);
-  memset(&skadd_client, 0, sizeof(skadd_client));
-
   call(printf("the server is online.\n\n"));
   for (; running_condition();)
   {
     // accepted client
-    int sd_client = accept(sd_listen, (struct sockaddr *)&skadd_client, &length);
+    int sd_client = accept(sd_listen, (struct sockaddr *)&skaddr_client, &length);
     call_noblock(sd_client);
     if (-1 == sd_client)
       continue;
     call(ioctl(sd_client, FIONBIO, &option));
 
-    printf("connected: %s:%u.\n", inet_ntoa(skadd_client.sin_addr), ntohs(skadd_client.sin_port));
-
     // sets
     FD_SET(sd_client, &descriptors.container);
     if (sd_client >= descriptors.count)
       descriptors.count = sd_client + 1;
-
-    memcpy(&socket_to_address[sd_client - 4], &skadd_client, sizeof(skadd_client));
   }
 
   // the server closes, an admin key was used
@@ -192,7 +151,9 @@ int main()
   call0(pthread_join(udp_thread, NULL));
   for (int fd = 0; fd < descriptors.count; fd++)
     if (FD_ISSET(fd, &descriptors.container))
-      call(printf("warning: %d is not closed.\n", fd));
+    {
+      // bad stuff
+    }
 
   call(close(sd_listen));
   call(close(sd_udp));
@@ -212,7 +173,7 @@ void *serve_client(int sd)
   call(read(sd, command, BYTES_COMMAND_MAX));
 
   char outcome[BYTES_OUTCOME_MAX];
-  strcpy(outcome, "raspuns TCP la cerere TCP: ");
+  strcpy(outcome, "raspuns TCP la ");
   strcat(outcome, command);
   call(write(sd, outcome, BYTES_OUTCOME_MAX));
 
