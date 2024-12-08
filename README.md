@@ -114,15 +114,13 @@ a. the sever uses i/o multiplexing and serves the ready file descriptors concure
 
 ## To do / questions / future improvements
 
+- experiment
+
 - increase safety with two running servers: one on my computer, one on the faculty's server, every update on the main server will tcp its way to the second one
 
 - random generator std::hash<> bug
-- connect - uses the train
-- disconnect
-
 - not portable for windows
 - 1024 clients at once
-- identation
 
 ## Notes
 

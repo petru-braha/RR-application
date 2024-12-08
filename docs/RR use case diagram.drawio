@@ -1,0 +1,31 @@
+<mxfile host="app.diagrams.net" agent="Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36" version="25.0.3">
+  <diagram name="Page-1" id="EUzniCL_CQ0iQ8z8rGUK">
+    <mxGraphModel dx="794" dy="474" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="lPlhynRfRn3SXkL0j8H0-1" value="Observer&lt;div&gt;&lt;br&gt;&lt;/div&gt;" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;outlineConnect=0;" vertex="1" parent="1">
+          <mxGeometry x="120" y="80" width="30" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="lPlhynRfRn3SXkL0j8H0-9" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=0.5;exitDx=0;exitDy=0;exitPerimeter=0;entryX=0;entryY=0.75;entryDx=0;entryDy=0;" edge="1" parent="1" source="lPlhynRfRn3SXkL0j8H0-3" target="lPlhynRfRn3SXkL0j8H0-6">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="lPlhynRfRn3SXkL0j8H0-3" value="Reporter" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;outlineConnect=0;" vertex="1" parent="1">
+          <mxGeometry x="120" y="320" width="30" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="lPlhynRfRn3SXkL0j8H0-5" value="Observer&lt;div&gt;&lt;br&gt;&lt;/div&gt;" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;outlineConnect=0;" vertex="1" parent="1">
+          <mxGeometry x="120" y="200" width="30" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="lPlhynRfRn3SXkL0j8H0-6" value="Server&#39;s database - trains&#39; schedule.&lt;br&gt;&lt;div&gt;Data to be found here:&lt;br&gt;- vehicle identification&lt;/div&gt;&lt;div&gt;- routes&#39; locations&lt;/div&gt;&lt;div&gt;- routes&#39; timetable (susceptible to chages)&lt;/div&gt;&lt;div&gt;- routes&#39; status&amp;nbsp;&lt;span style=&quot;background-color: initial;&quot;&gt;(susceptible to chages)&lt;/span&gt;&lt;/div&gt;" style="whiteSpace=wrap;html=1;aspect=fixed;align=center;" vertex="1" parent="1">
+          <mxGeometry x="280" y="120" width="240" height="240" as="geometry" />
+        </mxCell>
+        <mxCell id="lPlhynRfRn3SXkL0j8H0-7" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0;exitY=0.25;exitDx=0;exitDy=0;entryX=0.5;entryY=0.5;entryDx=0;entryDy=0;entryPerimeter=0;" edge="1" parent="1" source="lPlhynRfRn3SXkL0j8H0-6" target="lPlhynRfRn3SXkL0j8H0-1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="lPlhynRfRn3SXkL0j8H0-8" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=0.5;entryY=0.5;entryDx=0;entryDy=0;entryPerimeter=0;" edge="1" parent="1" source="lPlhynRfRn3SXkL0j8H0-6" target="lPlhynRfRn3SXkL0j8H0-5">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

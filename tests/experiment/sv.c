@@ -3,6 +3,8 @@
  * bibliography - see README.md file
  */
 
+#include <time.h>
+
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/time.h>
@@ -20,7 +22,24 @@
 #include <string.h>
 #include <stdbool.h>
 
-#include "include/shared.h"
+#include "../../include/shared.h"
+
+//------------------------------------------------
+//! experiment
+
+void operation()
+{
+  for (int i = 0; i < 1000; i++)
+    for (int j = 0; j < 1000; j++)
+      for (int k = 0; k < 1000; k++)
+        ;
+}
+
+void heavy_operation()
+{
+  for (int it = 0; it < 20; it++)
+    operation();
+}
 
 //------------------------------------------------
 //! global variables
@@ -48,14 +67,7 @@ int sd_udp = -1;
 // a server should always be online
 bool running_condition()
 {
-  int fd = open("include/dev/key.txt", O_RDONLY);
-  call_var(fd);
-
-  char key = '0';
-  call(read(fd, &key, 1));
-  call(close(fd));
-
-  return '1' == key;
+  return true;
 }
 
 // main thread
@@ -90,6 +102,8 @@ void *udp_communication(void *)
     char outcome[BYTES_OUTCOME_MAX];
     strcpy(outcome, "UDP answer to: ");
     strcat(outcome, command);
+
+    heavy_operation();
 
     sendto(sd_udp, outcome,
            BYTES_OUTCOME_MAX,
@@ -193,9 +207,13 @@ void *tcp_communication(int sd)
   char outcome[BYTES_OUTCOME_MAX];
   strcpy(outcome, "TCP answer to: ");
   strcat(outcome, command);
+
+  heavy_operation();
+
   call(write(sd, outcome, BYTES_OUTCOME_MAX));
 
-  if (0 == strcmp(command, "quit"))
+  // a client only sends once
+  // if (0 == strcmp(command, "quit"))
   {
     FD_CLR(sd, &descriptors.container);
     call(close(sd));
