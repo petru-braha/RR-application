@@ -170,7 +170,7 @@ Client's application builds the final string messages based on the data returned
     struct rr_route* it = routes(IASI, BUCHAREST);
     while(it) {
         // server sends the data 
-        write(sd, *it, sizeof(struct rr_route));
+        write(sd, it, sizeof(struct rr_route));
         it++; 
     }
             \end{lstlisting}

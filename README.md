@@ -121,6 +121,8 @@ a. the sever uses i/o multiplexing and serves the ready file descriptors concure
 
 ## To do / questions / future improvements
 
+- write limitation from the introduction
+- write scenarios in conclusions
 - conc_serv
 - experiment
 - if one of them crapa
