@@ -8,8 +8,8 @@
 // constants:
 
 const int NO_FLAG = 0;
-const size_t BYTES_COMMAND_MAX = 20;
-const size_t BYTES_OUTCOME_MAX = 100;
+#define BYTES_COMMAND_MAX 20
+#define BYTES_OUTCOME_MAX 100
 
 // const char path_database[] = "dev/users.txt";
 

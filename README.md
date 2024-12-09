@@ -2,11 +2,18 @@
 
 You can find the romanian verion of this document [here](./docs/README_RO.md).
 
+## Main things to
+
+- [client application](./client.c)
+- [server application](./server.c)
+- [official documentation](./docs/rr_raport.pdf)
+
 ## The communication protocol
 
 0. [id_train, time_departure_estimated, time_arrival_estimated, status] routes(location_departure, location_arrival)
 1. [id_train, time_departure_confirmed, location_arrival] departures(location_departure)
 2. [id_train, time_arrival_confirmed, location_departure] arrivals(location_arrival)
+3. void report(id_train, minutes)
 4. void quit()
 
 - function model: return_type name_function parameter(s)
@@ -114,8 +121,9 @@ a. the sever uses i/o multiplexing and serves the ready file descriptors concure
 
 ## To do / questions / future improvements
 
+- conc_serv
 - experiment
-
+- if one of them crapa
 - increase safety with two running servers: one on my computer, one on the faculty's server, every update on the main server will tcp its way to the second one
 
 - random generator std::hash<> bug
