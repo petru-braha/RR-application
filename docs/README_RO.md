@@ -1,6 +1,6 @@
 # Aplicația căilor ferate române
 
-Puteți găsi versiunea acestui document in engleza [aici](./docs/README_RO.md).
+Puteți găsi versiunea acestui document in engleza [aici](./../README.md).
 
 ## Fișiere principale
 

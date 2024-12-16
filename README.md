@@ -1,6 +1,6 @@
 # Romanian railways application
 
-You can find the romanian verion of this document [here](./docs/README_RO.md).
+You can find the romanian version of this document [here](./docs/README_RO.md).
 
 ## Main files
 
