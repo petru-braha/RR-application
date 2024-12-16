@@ -1,6 +1,5 @@
 /* client.c - requests-sending application
  * author - Braha Petru Bogdan - <petrubraha@gmail.com> (c)
- * bibliography - see README.md file
  */
 
 #include <stdio.h>

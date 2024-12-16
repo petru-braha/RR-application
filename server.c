@@ -1,6 +1,5 @@
 /* server.c - a concurrent server with i/o multiplexing, and two transport protocols
  * author - Braha Petru Bogdan - <petrubraha@gmail.com> (c)
- * bibliography - see README.md file
  */
 
 #include <unistd.h>
