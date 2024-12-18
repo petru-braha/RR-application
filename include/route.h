@@ -15,12 +15,11 @@ struct rr_time
 
 struct rr_route
 {
-    int id_train;
     int location_departure;
     int location_arrival;
     struct rr_time time_departure;
     struct rr_time time_arrival;
     struct rr_status status;
-};
+}; // id_train == index_route
 
 #endif

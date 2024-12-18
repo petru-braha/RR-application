@@ -1,12 +1,29 @@
 <route>
-    <title>
-    </title>
+    <id_train>  </id_train>
+    <location_departure>  </location_departure>
+    <location_arrival>  </location_arrival>
+    <time_departure>  </time_departure>
+    <time_arrival>  </time_arrival>
+    <status>  </status>
     
-    <id_train>
-    </id_train>
+</route>
 
-    <time_departure>
-    </time_departure>
-    <time_arrival>
-    </time_arrival>
+<route>
+    <id_train>  </id_train>
+    <location_departure>  </location_departure>
+    <location_arrival>  </location_arrival>
+    <time_departure>  </time_departure>
+    <time_arrival>  </time_arrival>
+    <status>  </status>
+    
+</route>
+
+<route>
+    <id_train>  </id_train>
+    <location_departure>  </location_departure>
+    <location_arrival>  </location_arrival>
+    <time_departure>  </time_departure>
+    <time_arrival>  </time_arrival>
+    <status>  </status>
+    
 </route>
