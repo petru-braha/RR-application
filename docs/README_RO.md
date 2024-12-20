@@ -65,4 +65,3 @@ Puteți găsi versiunea acestui document in engleza [aici](./../README.md).
 - raport: experiment cronometrat - vezi conc_serv
 - raport: limitări (introducere), scenarii în concluzii
 - creșteți siguranța cu două servere care rulează: unul pe computerul meu, unul pe serverul facultății, fiecare actualizare de pe serverul principal va trece la cel de-al doilea
-- bug: generator aleatoriu std::hash<> (nu atât de portabil, nu?)

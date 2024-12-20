@@ -4,6 +4,8 @@
 #include <stdlib.h>
 #include <sys/time.h>
 
+#include "dev/tcp_communication.h"
+
 //------------------------------------------------
 // constants:
 
@@ -37,7 +39,10 @@ char *convert_line(const char *const line)
 //------------------------------------------------
 // error:
 
-#define print_function_name(x) printf("\"%s\"", #x);
+#define error(message) printf("line %d error: %s.\n", __LINE__, message)
+#define warning(message) printf("line %d warning: %s.\n", __LINE__, message)
+
+#define print_function_name(x) printf("\"%s\"", #x)
 
 #define call(x)                                     \
     if (x < 0)                                      \
@@ -57,11 +62,11 @@ char *convert_line(const char *const line)
         exit(EXIT_FAILURE);                         \
     }
 
-#define call_var(x)                                                 \
-    if (x < 0)                                                      \
-    {                                                               \
-        printf("line %d error - %s.\n", __LINE__, strerror(errno)); \
-        exit(EXIT_FAILURE);                                         \
+#define call_var(x)                                                \
+    if (x < 0)                                                     \
+    {                                                              \
+        printf("line %d error: %s.\n", __LINE__, strerror(errno)); \
+        exit(EXIT_FAILURE);                                        \
     }
 
 #define call_noexit(x)                              \
@@ -70,6 +75,7 @@ char *convert_line(const char *const line)
         printf("line %d error: ", __LINE__);        \
         print_function_name(x);                     \
         printf(" failed - %s.\n", strerror(errno)); \
+        errno = 0;                                  \
     }
 
 #define call_noblock(x)                                 \

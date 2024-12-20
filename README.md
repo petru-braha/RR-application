@@ -54,10 +54,9 @@ You can find the romanian version of this document [here](./docs/README_RO.md).
 
 ## To do
 
-- another computer can't connect to my server
-- what if server crashes?
-- what if client crashes?
+- testing tcp and udp build: what if server crashes? what if client crashes?
 - not portable for windows
+- command encoding => 1 byte transmission VS
 - overcome the 1024 clients at once limitation
 
 <br>
@@ -65,4 +64,3 @@ You can find the romanian version of this document [here](./docs/README_RO.md).
 - raport: timed experiment - see conc_serv
 - raport: limitations (introduction), scenarios in conclusions
 - increase safety with two running servers: one on my computer, one on the faculty's server, every update on the main server will tcp its way to the second one
-- bug: random generator std::hash<> (not so portable aren't you?)
