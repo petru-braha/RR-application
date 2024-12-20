@@ -19,8 +19,8 @@
 #include <string.h>
 #include <stdbool.h>
 
-#include "../include/shared.h"
-#include "../include/command.h"
+#include "../../../include/shared.h"
+#include "../../../include/command.h"
 
 //------------------------------------------------
 //! global variables
@@ -48,7 +48,7 @@ int sd_udp = -1;
 // a server should always be online
 bool running_condition()
 {
-    int fd = open("../include/dev/key.txt", O_RDONLY);
+    int fd = open("../../../include/dev/key.txt", O_RDONLY);
     call_var(fd);
 
     char key = '0';
@@ -189,21 +189,15 @@ void *tcp_communication(int sd)
     char command[BYTES_COMMAND_MAX];
     ssize_t bytes = read(sd, command, BYTES_COMMAND_MAX);
 
-    // error checking
-    if (bytes < 1)
+    if (errno || bytes < 1)
     {
+        warning("client disconnected while receving command");
+        if (ECONNRESET != errno && errno)
+            error(strerror(errno));
+
         FD_CLR(sd, &descriptors.container);
         call(close(sd));
-        call(printf("warning: client with %d socket id ", sd));
-        call(printf("disconnected while receving command.\n"));
-
-        if (errno)
-        {
-            if (104 != errno)
-                printf("error: %s.\n", strerror(errno));
-            errno = 0;
-        }
-
+        errno = 0;
         return NULL;
     }
 
@@ -211,15 +205,20 @@ void *tcp_communication(int sd)
     parse_command(command, outcome);
 
     bytes = write_all(sd, outcome, BYTES_OUTCOME_MAX);
-    call_var(bytes);
 
-    if (0 == bytes)
+    if (errno || bytes < 1)
     {
-        call(printf("warning: client with %d socket id ", sd));
-        call(printf("disconnected while sending output.\n"));
+        warning("client disconnected while sending outcome");
+        if (ECONNRESET != errno && errno)
+            error(strerror(errno));
+
+        FD_CLR(sd, &descriptors.container);
+        call(close(sd));
+        errno = 0;
+        return NULL;
     }
 
-    if (0 == bytes || 0 == strcmp(command, "quit"))
+    if (0 == strcmp(command, "quit"))
     {
         FD_CLR(sd, &descriptors.container);
         call(close(sd));

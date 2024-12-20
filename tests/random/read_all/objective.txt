@@ -1,0 +1,7 @@
+Test the tcp communication when:
+    - client crashes
+        - before sending
+        - after sending before receiving x
+        - after receiving
+    - server crashes
+    - segregated read/write calls

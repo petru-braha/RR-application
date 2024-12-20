@@ -15,62 +15,27 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 
-#include "../include/shared.h"
-#include "../include/printer.h"
+#include "../../../include/shared.h"
+#include "../../../include/printer.h"
 
 int sd_tcp, sd_udp;
 struct sockaddr_in skadd_server;
 
 //------------------------------------------------
 
-static ssize_t recv_command(char *command)
-{
-  bzero(command, BYTES_COMMAND_MAX);
-  int bytes = read(STDIN_FILENO, command,
-                   BYTES_COMMAND_MAX);
-
-  // repair
-  size_t index = strlen(command) - 1;
-  command[index] = '\0';
-  return bytes;
-}
-
-ssize_t send_command(char *command)
-{
-  // tcp communication if the client sends data
-  if (0 == strcmp(command, "report"))
-    return write(sd_tcp, "re", 2) + 
-        write(sd_tcp, "port", 4);
-
-  if (0 == strcmp(command, "quit"))
-    return write_all(sd_tcp, command,
-                 BYTES_COMMAND_MAX);
-
-  // udp communication for queries
-  return sendto(sd_udp, command,
-                BYTES_COMMAND_MAX, NO_FLAG,
-                (struct sockaddr *)&skadd_server,
-                sizeof(skadd_server));
-}
-
-// tcp return
-ssize_t recv_outcome(char *outcome, char *command)
-{
-  bzero(outcome, BYTES_OUTCOME_MAX);
-
-  if (0 == strcmp(command, "report"))
-    return read_all(sd_tcp, outcome, BYTES_OUTCOME_MAX);
-  if (0 == strcmp(command, "quit"))
-    return read_all(sd_tcp, outcome, BYTES_OUTCOME_MAX);
-
-  socklen_t length = sizeof(skadd_server);
-  return recvfrom(sd_udp, outcome,
-                  BYTES_OUTCOME_MAX, NO_FLAG,
-                  (struct sockaddr *)&skadd_server,
-                  &length);
-}
+static ssize_t recv_command(char *command);
+ssize_t send_command(const char const *command);
+ssize_t recv_outcome(char *outcome,
+                     const char const *command);
 
 //------------------------------------------------
+
+void exit_client(int status)
+{
+  call(close(sd_tcp));
+  call(close(sd_udp));
+  exit(status);
+}
 
 int main(int argc, char *argv[])
 {
@@ -105,14 +70,102 @@ int main(int argc, char *argv[])
   char outcome[BYTES_OUTCOME_MAX];
   for (int condition = 1; condition;)
   {
-    call(recv_command(command));
-    call(send_command(command));
-    call(recv_outcome(outcome, command));
+    recv_command(command);
+    send_command(command);
+    recv_outcome(outcome, command);
     call(printf("%s\n", outcome));
     condition = strcmp(command, "quit");
   }
 
-  call(close(sd_tcp));
-  call(close(sd_udp));
-  return EXIT_SUCCESS;
+  exit_client(0);
+}
+
+//------------------------------------------------
+//! other
+
+static ssize_t recv_command(char *command)
+{
+  bzero(command, BYTES_COMMAND_MAX);
+  int bytes = read(STDIN_FILENO, command,
+                   BYTES_COMMAND_MAX);
+
+  // repair
+  size_t index = strlen(command) - 1;
+  command[index] = '\0';
+  return bytes;
+}
+
+//------------------------------------------------
+// sending
+
+ssize_t send_tcp(const char const *command)
+{
+  ssize_t bytes = write_all(sd_tcp, command,
+                            BYTES_COMMAND_MAX);
+
+  if (errno || bytes < 1)
+  {
+    if (ECONNRESET == errno)
+      error("server disconnected while sending command");
+    else
+      error(strerror(errno));
+    exit_client(errno);
+  }
+
+  return bytes;
+}
+
+ssize_t send_udp() { return 0; }
+
+ssize_t send_command(const char const *command)
+{
+  // tcp communication if the client sends data
+  if (0 == strcmp(command, "report"))
+    return send_tcp(command);
+
+  if (0 == strcmp(command, "quit"))
+    return send_tcp(command);
+
+  // udp communication for queries
+  return sendto(sd_udp, command,
+                BYTES_COMMAND_MAX, NO_FLAG,
+                (struct sockaddr *)&skadd_server,
+                sizeof(skadd_server));
+}
+
+//------------------------------------------------
+// receiving
+
+ssize_t recv_tcp(char *outcome)
+{
+  ssize_t bytes = read_all(sd_tcp, outcome,
+                           BYTES_OUTCOME_MAX);
+  if (errno || bytes < 1)
+  {
+    if (ECONNRESET == errno)
+      error("server disconnected while receiving output");
+    else
+      error(strerror(errno));
+    exit_client(errno);
+  }
+
+  return bytes;
+}
+
+ssize_t recv_udp() { return 0; }
+
+ssize_t recv_outcome(char *outcome, const char const *command)
+{
+  bzero(outcome, BYTES_OUTCOME_MAX);
+
+  if (0 == strcmp(command, "report"))
+    return recv_tcp(outcome);
+  if (0 == strcmp(command, "quit"))
+    return recv_tcp(outcome);
+
+  socklen_t length = sizeof(skadd_server);
+  return recvfrom(sd_udp, outcome,
+                  BYTES_OUTCOME_MAX, NO_FLAG,
+                  (struct sockaddr *)&skadd_server,
+                  &length);
 }
