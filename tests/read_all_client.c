@@ -25,7 +25,8 @@ struct sockaddr_in skadd_server;
 
 static ssize_t recv_command(char *command);
 ssize_t send_command(const char const *command);
-ssize_t recv_outcome(char *outcome, const char const *command);
+ssize_t recv_outcome(char *outcome,
+                     const char const *command);
 
 //------------------------------------------------
 

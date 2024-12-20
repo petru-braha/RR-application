@@ -191,13 +191,9 @@ void *tcp_communication(int sd)
 
     if (errno || bytes < 1)
     {
-        if (ECONNRESET == errno)
-        {
-            call(printf("warning: client with %d socket id ", sd));
-            call(printf("disconnected while receving command.\n"));
-        }
-        else
-            call(printf("line %d error: %s.\n", __LINE__, strerror(errno)));
+        warning("client disconnected while receving command");
+        if (ECONNRESET != errno && errno)
+            error(strerror(errno));
 
         FD_CLR(sd, &descriptors.container);
         call(close(sd));
@@ -212,13 +208,9 @@ void *tcp_communication(int sd)
 
     if (errno || bytes < 1)
     {
-        if (ECONNRESET == errno)
-        {
-            call(printf("warning: client with %d socket id ", sd));
-            call(printf("disconnected while sending output.\n"));
-        }
-        else
-            call(printf("line %d error: %s.\n", __LINE__, strerror(errno)));
+        warning("client disconnected while sending outcome");
+        if (ECONNRESET != errno && errno)
+            error(strerror(errno));
 
         FD_CLR(sd, &descriptors.container);
         call(close(sd));
@@ -262,5 +254,4 @@ void *multiplexing(void *)
     return NULL;
 }
 
-// case client drops after read
 // to do: the same of udp
