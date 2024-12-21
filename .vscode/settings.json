@@ -19,7 +19,8 @@
     "time_types.h": "c",
     "stdio.h": "c",
     "chrono": "c",
-    "system_error": "c"
+    "system_error": "c",
+    "computation.h": "c"
   },
   "C_Cpp_Runner.cCompilerPath": "gcc",
   "C_Cpp_Runner.cppCompilerPath": "g++",
