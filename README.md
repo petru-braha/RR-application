@@ -60,6 +60,7 @@ You can find the romanian version of this document [here](./docs/README_RO.md).
 - c time after an ip address becomes available again after closing socket
 - standard names please
 - overcome the 1024 clients at once limitation
+- endianess portability????????
 
 <br>
 

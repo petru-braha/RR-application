@@ -5,6 +5,7 @@
 #include <sys/time.h>
 
 #include "dev/tcp_communication.h"
+#include "computation.h"
 
 //------------------------------------------------
 // constants:

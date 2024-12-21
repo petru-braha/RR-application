@@ -31,7 +31,7 @@ ssize_t read_all(const int fd, char *buffer, const size_t count_bytes)
     return bytes;
 }
 
-ssize_t write_all(const int fd, const char const *buffer, const size_t count_bytes)
+ssize_t write_all(const int fd, const char *buffer, const size_t count_bytes)
 {
     if (0 == count_bytes || NULL == buffer)
         return -1;

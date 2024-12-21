@@ -16,7 +16,7 @@ char *get_argument(const char *const command)
 //------------------------------------------------
 // api:
 
-void parse_command(const char const *command, char *outcome)
+void parse_command(const char *command, char *outcome)
 {
     if (0 == strcmp(command, "report") ||
         0 == strcmp(command, "quit"))
@@ -25,15 +25,16 @@ void parse_command(const char const *command, char *outcome)
         return;
     }
 
+    strcpy(outcome, "UDP: ");
     if (0 == strcmp(command, "routes") ||
         0 == strcmp(command, "departures") ||
         0 == strcmp(command, "arrivals"))
     {
-        strcat(strcpy(outcome, "UDP: "), command);
+        strcat(outcome, command);
         return;
     }
 
-    strcpy(outcome, "invalid command");
+    strcat(outcome, "invalid command");
 }
 
 /*
