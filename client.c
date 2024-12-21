@@ -59,9 +59,15 @@ int main(int argc, char *argv[])
                sizeof(struct sockaddr)));
   // udp
   sd_udp = socket(AF_INET, SOCK_DGRAM, 0);
-  call_var(sd_udp);
-  call(connect(sd_udp, (struct sockaddr *)&skadd_server,
-               sizeof(struct sockaddr)));
+  if (-1 == sd_udp ||
+      -1 == connect(sd_udp,
+                    (struct sockaddr *)&skadd_server,
+                    sizeof(struct sockaddr)))
+  {
+    call(close(sd_tcp));
+    error("udp socket failed, the first one didn't");
+    return EXIT_FAILURE;
+  }
 
   // command loop
   call(printf("welcome, now you can send commands.\n\n"));

@@ -52,6 +52,14 @@ Puteți găsi versiunea acestui document in engleza [aici](./../README.md).
 - creare unui nou thread pentru fiecare client
 - multiplexare i/o cu ​​apeluri neblocante
 
+<br>
+
+2. securitate
+
+- proceduri specifice pentru erori posibile
+- solutie daca un actor se opreste din a raspunde
+- alt end pentru server
+
 ## De făcut
 
 - alt computer nu se poate conecta la serverul meu

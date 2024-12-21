@@ -52,19 +52,29 @@ You can find the romanian version of this document [here](./docs/README_RO.md).
 - create thread for each client
 - i/o multiplexing with non-blocking calls
 
+<br>
+
+2. security
+
+- specific procedures for possible errors
+- solution if one party stops responding
+- second end of the server
+
 ## To do
 
-- testing tcp and udp build: what if server crashes? what if client crashes?
-- not portable for windows
-- command encoding => 1 byte transmission VS
-- c time after an ip address becomes available again after closing socket
-- standard names please
-- overcome the 1024 clients at once limitation
-- endianess portability????????
+- the server shouldn't shut down during loop if errors occur
+- [ideas](./docs/brainstorm.md)
+- change time after an ip address becomes available again after closing server
 
 <br>
 
-- raport: TDD 
+- raport: TDD, security if party crashes
 - raport: timed experiment - see conc_serv
 - raport: limitations (introduction), scenarios in conclusions
 - increase safety with two running servers: one on my computer, one on the faculty's server, every update on the main server will tcp its way to the second one
+
+<br>
+
+- overcome the only 1024 clients at once limitation
+- windows portability
+- endianess portability
