@@ -17,6 +17,7 @@
 
 #include "../../../include/shared.h"
 #include "../../../include/printer.h"
+#include "../../../include/computation.h"
 
 int sd_tcp, sd_udp;
 struct sockaddr_in skadd_server;
@@ -30,7 +31,7 @@ ssize_t recv_outcome(char *outcome,
 
 //------------------------------------------------
 
-void exit_client(int status)
+static void exit_client(int status)
 {
   call(close(sd_tcp));
   call(close(sd_udp));
@@ -102,12 +103,12 @@ ssize_t send_tcp(const char const *command)
 {
   ssize_t bytes = write_all(sd_tcp, command,
                             BYTES_COMMAND_MAX);
-
+  printf("%d bytes written to server.\n", bytes);
+  
   if (errno || bytes < 1)
   {
-    if (ECONNRESET == errno)
-      error("server disconnected while sending command");
-    else
+    error("server disconnected while sending command");
+    if (ECONNRESET != errno)
       error(strerror(errno));
     exit_client(errno);
   }
@@ -142,9 +143,8 @@ ssize_t recv_tcp(char *outcome)
                            BYTES_OUTCOME_MAX);
   if (errno || bytes < 1)
   {
-    if (ECONNRESET == errno)
-      error("server disconnected while receiving output");
-    else
+    error("server disconnected while receiving output");
+    if (ECONNRESET != errno && errno)
       error(strerror(errno));
     exit_client(errno);
   }

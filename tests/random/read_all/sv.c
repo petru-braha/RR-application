@@ -187,7 +187,7 @@ void *tcp_communication(int sd)
         return NULL;
 
     char command[BYTES_COMMAND_MAX];
-    ssize_t bytes = read(sd, command, BYTES_COMMAND_MAX);
+    ssize_t bytes = read_all(sd, command, BYTES_COMMAND_MAX);
 
     if (errno || bytes < 1)
     {

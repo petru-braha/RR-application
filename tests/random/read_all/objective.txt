@@ -1,7 +1,13 @@
 Test the tcp communication when:
-    - client crashes
-        - before sending
-        - after sending before receiving x
-        - after receiving
-    - server crashes
+    - server messages when client crashes
+        - before client sends - done
+        - after client sends before receiving - done
+        - after client receives - done
+    - client messages when server crashes
+        - before client sends - done
+        - after client sends before receiving - done
+        - after client receives - done
+    
+    - error: same error messages for each case
+
     - segregated read/write calls
