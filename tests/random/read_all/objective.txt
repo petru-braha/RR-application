@@ -8,6 +8,6 @@ Test the tcp communication when:
         - after client sends before receiving - done
         - after client receives - done
     
-    - error: same error messages for each case
+    - error: same error messages for each case - write never fails - why??????????
 
-    - segregated read/write calls
+    - segregated read/write calls - done

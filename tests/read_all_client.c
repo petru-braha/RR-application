@@ -9,6 +9,7 @@
 #include <string.h>
 
 #include <sys/socket.h>
+#include <sys/ioctl.h>
 #include <sys/types.h>
 
 #include <netdb.h>
@@ -17,6 +18,7 @@
 
 #include "../include/shared.h"
 #include "../include/printer.h"
+#include "../include/computation.h"
 
 int sd_tcp, sd_udp;
 struct sockaddr_in skadd_server;
@@ -30,7 +32,7 @@ ssize_t recv_outcome(char *outcome,
 
 //------------------------------------------------
 
-void exit_client(int status)
+static void exit_client(int status)
 {
   call(close(sd_tcp));
   call(close(sd_udp));
@@ -105,9 +107,8 @@ ssize_t send_tcp(const char const *command)
 
   if (errno || bytes < 1)
   {
-    if (ECONNRESET == errno)
-      error("server disconnected while sending command");
-    else
+    error("server disconnected while sending command");
+    if (ECONNRESET != errno && errno)
       error(strerror(errno));
     exit_client(errno);
   }
@@ -140,11 +141,11 @@ ssize_t recv_tcp(char *outcome)
 {
   ssize_t bytes = read_all(sd_tcp, outcome,
                            BYTES_OUTCOME_MAX);
+
   if (errno || bytes < 1)
   {
-    if (ECONNRESET == errno)
-      error("server disconnected while receiving output");
-    else
+    error("server disconnected while receiving output");
+    if (ECONNRESET != errno && errno)
       error(strerror(errno));
     exit_client(errno);
   }

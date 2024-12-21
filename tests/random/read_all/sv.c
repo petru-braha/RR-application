@@ -148,7 +148,7 @@ int main()
         // error check
         if (0 != errno)
         {
-            printf("warning: %s.\n", strerror(errno));
+            warning(strerror(errno));
             errno = 0;
         }
 

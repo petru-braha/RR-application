@@ -3,6 +3,8 @@
 
 #include <stdlib.h>
 #include <unistd.h>
+#include <string.h>
+#include <errno.h>
 
 ssize_t read_all(const int fd, char *buffer, const size_t count_bytes)
 {
@@ -13,7 +15,14 @@ ssize_t read_all(const int fd, char *buffer, const size_t count_bytes)
     while (bytes != count_bytes)
     {
         ssize_t b = read(fd, buffer + bytes, count_bytes);
-        if (b < 1) // error
+
+        if (-1 == b && EWOULDBLOCK == errno)
+        {
+            errno = 0;
+            continue;
+        }
+
+        if (errno || b < 1) // error
             return b;
 
         bytes += b;
@@ -31,7 +40,14 @@ ssize_t write_all(const int fd, const char const *buffer, const size_t count_byt
     while (bytes != count_bytes)
     {
         ssize_t b = write(fd, buffer + bytes, count_bytes);
-        if (b < 1) // error
+
+        if (-1 == b && EWOULDBLOCK == errno)
+        {
+            errno = 0;
+            continue;
+        }
+
+        if (errno || b < 1) // error
             return b;
 
         bytes += b;

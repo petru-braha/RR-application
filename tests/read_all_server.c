@@ -148,7 +148,7 @@ int main()
         // error check
         if (0 != errno)
         {
-            printf("warning: %s.\n", strerror(errno));
+            warning(strerror(errno));
             errno = 0;
         }
 
@@ -187,7 +187,7 @@ void *tcp_communication(int sd)
         return NULL;
 
     char command[BYTES_COMMAND_MAX];
-    ssize_t bytes = read(sd, command, BYTES_COMMAND_MAX);
+    ssize_t bytes = read_all(sd, command, BYTES_COMMAND_MAX);
 
     if (errno || bytes < 1)
     {
@@ -253,5 +253,3 @@ void *multiplexing(void *)
 
     return NULL;
 }
-
-// to do: the same of udp

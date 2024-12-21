@@ -9,6 +9,7 @@
 #include <string.h>
 
 #include <sys/socket.h>
+#include <sys/ioctl.h>
 #include <sys/types.h>
 
 #include <netdb.h>
@@ -101,14 +102,14 @@ static ssize_t recv_command(char *command)
 
 ssize_t send_tcp(const char const *command)
 {
-  ssize_t bytes = write_all(sd_tcp, command,
-                            BYTES_COMMAND_MAX);
-  printf("%d bytes written to server.\n", bytes);
-  
+  ssize_t bytes = //write_all(sd_tcp, command,
+                            //BYTES_COMMAND_MAX);
+  write(sd_tcp, "re", 2) + write(sd_tcp, "port", 4) + write(sd_tcp, "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0", 14);
+
   if (errno || bytes < 1)
   {
     error("server disconnected while sending command");
-    if (ECONNRESET != errno)
+    if (ECONNRESET != errno && errno)
       error(strerror(errno));
     exit_client(errno);
   }
@@ -141,6 +142,7 @@ ssize_t recv_tcp(char *outcome)
 {
   ssize_t bytes = read_all(sd_tcp, outcome,
                            BYTES_OUTCOME_MAX);
+  
   if (errno || bytes < 1)
   {
     error("server disconnected while receiving output");
