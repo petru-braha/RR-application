@@ -95,10 +95,7 @@ int main()
 		routes[index_route].time_arrival.hours = count_hours;
 		routes[index_route].time_arrival.minutes = count_minutes;
 
-		// status
-		routes[index_route].status.status_departure = false;
-		routes[index_route].status.status_arrival = false;
-
+		routes[index_route].status = STATUS_NDNA;
 		rr_route route = routes.at(index_route);
 		routes.insert(routes.begin() + index_route, {route});
 	}

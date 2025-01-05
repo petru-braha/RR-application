@@ -20,7 +20,11 @@
     "stdio.h": "c",
     "chrono": "c",
     "system_error": "c",
-    "computation.h": "c"
+    "computation.h": "c",
+    "parser.h": "c",
+    "tree.h": "c",
+    "c14n.h": "c",
+    "typeinfo": "c"
   },
   "C_Cpp_Runner.cCompilerPath": "gcc",
   "C_Cpp_Runner.cppCompilerPath": "g++",

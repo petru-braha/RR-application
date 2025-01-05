@@ -1,0 +1,26 @@
+<schedule>
+    <route>
+        <id_train> 0 </id_train>
+        <location_departure> 0 </location_departure>
+        <location_arrival> 1 </location_arrival>
+        <time_departure> 1 </time_departure>
+        <time_arrival> 2 </time_arrival>
+    </route>
+
+    <route>
+        <id_train> 1 </id_train>
+        <location_departure> 1 </location_departure>
+        <location_arrival> 2 </location_arrival>
+        <time_departure> 2 </time_departure>
+        <time_arrival> 3 </time_arrival>
+    </route>
+
+    <route>
+        <id_train> 2 </id_train>
+        <location_departure> 2 </location_departure>
+        <location_arrival> 3 </location_arrival>
+        <time_departure> 2 </time_departure>
+        <time_arrival> 4 </time_arrival>
+    </route>
+
+</schedule>

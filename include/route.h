@@ -1,25 +1,31 @@
 #ifndef _00ITINERARY00_
 #define _00ITINERARY00_
 
-struct rr_status
-{
-    bool status_departure;
-    bool status_arrival;
-};
+#define COUNT_LOCATION 41
+#define LOCATION_MIN 0
+#define LOCATION_MAX 40
 
-struct rr_time
-{
-    int hours;
-    int minutes;
-};
+#define TIME_MIN 0
+#define TIME_MAX 1440
+
+// NDNA == not departed not arrived
+#define STATUS_NDNA 0
+#define STATUS_YDNA 100
+#define STATUS_YDYA 200
+#define STATUS_OKAY 0
+#define STATUS_LATE 99
+#define STATUS_FAIL 199
 
 struct rr_route
 {
-    int location_departure;
-    int location_arrival;
-    struct rr_time time_departure;
-    struct rr_time time_arrival;
-    struct rr_status status;
-}; // id_train == index_route
+    unsigned short departure_data;
+    unsigned short arrival_data;
+    unsigned char flags;
+};
+
+struct rr_routes
+{
+    unsigned char dada[5];
+};
 
 #endif

@@ -7,10 +7,37 @@
 0. login logout and register
 0. random generator of xml files
 
+### terminology
+
+- set == encode == encrypt
+- get == decode == decrpyt
+
 ### disconnection
 
 - if clients disconnect during operation => server warning
 - same for server shutdown => close clients with appropriate message
+
+### data encoding
+
+- xml data should be minimal and understandable for developers
+    - developers should be able to encode correctly the data
+    - it is not that relevant to be as minimal as possible since parsing the file returns char*
+- server data should be minimal and its decoding should be understandable for developers
+    - this should be as minimal as possible => gurantee speed
+- data received by client should be minimal and its decoding should be understandable by anyone
+    - still minimal as possible
+    - the client application will decrypt the data in the most clever way possible
+
+- itinerary is a singleton
+- multiple routes can have the same itinerary
+- 820 total possible itineraries
+- 1440 total possible times
+- status will be encoded in departure location in the following way
+- 57600 - 1440 * 41
+- (57600, 65536)
+
+4294967295
+11111111
 
 ### command encoding 
 
@@ -26,6 +53,11 @@
 | 252  | arrivals   |
 | 5    | report     |
 | 6    | quit       |
+
+### xml part
+
+- reading from it returns xmlChar * => char* => unsigned char
+
 
 ### random ideas
 
