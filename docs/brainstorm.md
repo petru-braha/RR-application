@@ -36,9 +36,6 @@
 - 57600 - 1440 * 41
 - (57600, 65536)
 
-4294967295
-11111111
-
 ### command encoding 
 
 - let's send only one byte to server

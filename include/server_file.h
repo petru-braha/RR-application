@@ -10,7 +10,6 @@
 
 #include "../include/route.h"
 
-// gcc xml_read.c -I/usr/include/libxml2 -lxml2
 struct rr_route routes[COUNT_ROUTES_MAX];
 
 int write_xml()
@@ -18,9 +17,8 @@ int write_xml()
     pid_t process = fork();
     if (0 == process)
     {
-        // lauch process
         execv("write_xml", NULL);
-        printf("");
+        printf("error: execv failed.\n");
         return EXIT_FAILURE;
     }
     else
