@@ -1,7 +1,11 @@
 #include <stdio.h>
-#include <random>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 
 #include <unordered_map>
+#include <libxml2/libxml/parser.h>
+
 #include "dev/generator.hpp"
 #include "route.h"
 
@@ -10,14 +14,12 @@ using std::vector;
 
 random_generator g;
 
-constexpr size_t COUNT_CITIES = 42;
-
 constexpr int BB = 0;
 constexpr int CJ = 13;
 constexpr int IS = 24;
 
 constexpr size_t G_MINIMUM_CITY = 1;
-constexpr size_t G_MAXIMUM_CITY = COUNT_CITIES / 2;
+constexpr size_t G_MAXIMUM_CITY = COUNT_LOCATION / 2;
 
 constexpr size_t G_MINIMUM_TIME = 0;
 constexpr size_t G_MAXIMUM_TIME = 1440;
@@ -27,14 +29,14 @@ constexpr size_t G_MAXIMUM_ALTV = 6;
 
 int rate(const size_t city)
 {
-	int minimum = 0, maximum = COUNT_CITIES / 2;
+	size_t minimum = 0, maximum = COUNT_LOCATION / 2;
 	if (city == BB || city == IS || city == CJ)
 	{
 		minimum += 3;
 		maximum += 3;
 	}
 
-	// return generator(minimum, maximum);
+	return g(minimum, maximum);
 }
 
 void city_select(const size_t count_index, size_t *results);
@@ -42,23 +44,23 @@ void city_select(const size_t count_index, size_t *results);
 void location_generation(size_t &count_routes, std::vector<rr_route> &routes)
 {
 	// only location generation
-	unordered_map<int, vector<int>> locations(COUNT_CITIES);
-	for (size_t index_city = 0; index_city < COUNT_CITIES; index_city++)
+	unordered_map<int, vector<int>> locations(COUNT_LOCATION);
+	for (size_t index_city = 0; index_city < COUNT_LOCATION; index_city++)
 	{
 		const size_t count_arrival_location = g(G_MINIMUM_CITY, G_MAXIMUM_CITY);
-		size_t arrival_location[COUNT_CITIES]{};
+		size_t arrival_location[COUNT_LOCATION]{};
 		city_select(count_arrival_location, arrival_location);
 		for (size_t i = 0; i < count_arrival_location; i++)
 			locations[index_city].emplace_back(arrival_location[i]);
 	}
 
 	// init data structure
-	for (size_t index_city = 0; index_city < COUNT_CITIES; index_city++)
+	for (size_t index_city = 0; index_city < COUNT_LOCATION; index_city++)
 		count_routes += locations[index_city].size();
 
 	size_t index_route = 0;
 	std::vector<rr_route> routes(count_routes);
-	for (size_t index_city = 0; index_city < COUNT_CITIES; index_city++)
+	for (size_t index_city = 0; index_city < COUNT_LOCATION; index_city++)
 	{
 		routes[index_route].location_departure = index_city;
 		for (size_t i_arrival = 0; i_arrival < locations[index_city].size(); i_arrival++)
@@ -72,45 +74,53 @@ void location_generation(size_t &count_routes, std::vector<rr_route> &routes)
 int main()
 {
 	size_t count_routes = 0;
-	std::vector<rr_route> routes(COUNT_CITIES);
+	std::vector<rr_route> routes(COUNT_LOCATION);
 
 	location_generation(count_routes, routes);
 
-	// hour, status, alternative generation
+	// time, alternative generation
 	size_t count_alternatives = g(G_MINIMUM_ALTV, G_MAXIMUM_ALTV);
 	count_routes *= count_alternatives;
 	for (size_t index_route = 0; index_route < count_routes; index_route++)
 	{
 		// departure hour
-		int time = (int)g(G_MINIMUM_TIME, G_MAXIMUM_TIME),
-			count_hours = time / 24,
-			count_minutes = time % 24;
-		routes[index_route].time_departure.hours = count_hours;
-		routes[index_route].time_departure.minutes = count_minutes;
+		int time = (int)g(G_MINIMUM_TIME, G_MAXIMUM_TIME);
+		routes[index_route].time_departure;
 
 		// arrival hour
 		time = (int)g(G_MINIMUM_TIME, G_MAXIMUM_TIME);
-		count_hours = time / 24;
-		count_minutes = time % 24;
-		routes[index_route].time_arrival.hours = count_hours;
-		routes[index_route].time_arrival.minutes = count_minutes;
+		routes[index_route].time_arrival = time;
 
-		routes[index_route].status = STATUS_NDNA;
+		// routes[index_route].status = STATUS_NDNA;
 		rr_route route = routes.at(index_route);
 		routes.insert(routes.begin() + index_route, {route});
 	}
 
-	// generate xml
+	const char path[] = "random schedule.xml";
+	// create or override
+	xmlDocPtr document = xmlParseFile(path);
+	xmlNodePtr route_node;
+
+	// xmlNewTextChild
+	// add <schedule>
+	for (size_t i = 0; i < routes.size(); i++)
+	{
+		// add <route>
+
+		// add <>
+
+		// add </route>
+	}
 }
 
 // randomly select count_index different cities in linear time
 void city_select(const size_t count_index, size_t *results)
 {
-	if (count_index >= COUNT_CITIES)
+	if (count_index >= COUNT_LOCATION)
 		return;
 
-	size_t index_array[COUNT_CITIES];
-	for (size_t i = 0; i < COUNT_CITIES; i++)
+	size_t index_array[COUNT_LOCATION];
+	for (size_t i = 0; i < COUNT_LOCATION; i++)
 		index_array[i] = i;
 
 	size_t it_index_array = 0;

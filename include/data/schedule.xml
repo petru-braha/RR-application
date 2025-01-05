@@ -1,26 +1,23 @@
 <schedule>
     <route>
-        <id_train> 041 </id_train>
-        <location_departure> 41 </location_departure>
+        <location_departure> 0 </location_departure>
         <location_arrival> 1 </location_arrival>
-        <time_departure> 1 </time_departure>
+        <time_departure> 580 </time_departure>
+        <time_arrival> 610 </time_arrival>
+    </route>
+
+    <route>
+        <location_departure> 1 </location_departure>
+        <location_arrival> 34 </location_arrival>
+        <time_departure> 1112 </time_departure>
         <time_arrival> 2 </time_arrival>
     </route>
 
     <route>
-        <id_train> 1 </id_train>
-        <location_departure> 1 </location_departure>
-        <location_arrival> 2 </location_arrival>
-        <time_departure> 2 </time_departure>
-        <time_arrival> 3 </time_arrival>
-    </route>
-
-    <route>
-        <id_train> 2 </id_train>
         <location_departure> 2 </location_departure>
-        <location_arrival> 3 </location_arrival>
-        <time_departure> 2 </time_departure>
-        <time_arrival> 4 </time_arrival>
+        <location_arrival> 23 </location_arrival>
+        <time_departure> 222 </time_departure>
+        <time_arrival> 526 </time_arrival>
     </route>
 
 </schedule>

@@ -1,12 +1,15 @@
 #ifndef _00ITINERARY00_
 #define _00ITINERARY00_
 
+// 60 MB
+#define COUNT_ROUTES_MAX 10000
+
 #define COUNT_LOCATION 41
 #define LOCATION_MIN 0
 #define LOCATION_MAX 40
 
 #define TIME_MIN 0
-#define TIME_MAX 1440
+#define TIME_MAX 1441
 
 // NDNA == not departed not arrived
 #define STATUS_NDNA 0
