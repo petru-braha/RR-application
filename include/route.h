@@ -18,14 +18,10 @@
 
 struct rr_route
 {
-    unsigned short departure_data;
-    unsigned short arrival_data;
-    unsigned char flags;
-};
-
-struct rr_routes
-{
-    unsigned char dada[5];
+    unsigned char location_departure;
+    unsigned char location_arrival;
+    unsigned short time_departure;
+    unsigned short time_arrival;
 };
 
 #endif

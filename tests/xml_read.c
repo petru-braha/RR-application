@@ -15,17 +15,36 @@ int main()
 {
     
     // xmlKeepBlanksDefault();
-    printf("%d\n", sizeof(struct rr_routes));
     xmlDocPtr document = xmlParseFile(path);
 
-    xmlNodePtr entity = NULL;
-    entity = xmlDocGetRootElement(document)->xmlChildrenNode;
+    xmlNodePtr route = NULL;
+    route = xmlDocGetRootElement(document)->xmlChildrenNode;
 
-    for (; entity; entity = entity->next)
+    for (; route; route = route->next)
     {
-        if (0 == xmlStrcmp(entity->name, (const xmlChar *)"text"))
+        //struct rr_route route;
+        if (0 == xmlStrcmp(route->name, (const xmlChar *)"text"))
             continue;
-        printf("%s\n", entity->name);
+        
+        // id_train
+        xmlChar* key = NULL;
+        xmlNodePtr data = route->xmlChildrenNode->next;
+        key = xmlNodeListGetString(document, data->xmlChildrenNode, 1);
+        printf("keyword: %s\n", key);
+        xmlFree(key);
+
+        // location
+        data = route->next;
+        key = xmlNodeListGetString(document, data->xmlChildrenNode, 1);
+        printf("keyword: %s\n", key);
+        xmlFree(key);
+        break;
+
+        data = route->next;
+
+        // time
+
+
     }
 
     xmlFreeDoc(document);

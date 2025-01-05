@@ -1,7 +1,7 @@
 <schedule>
     <route>
-        <id_train> 0 </id_train>
-        <location_departure> 0 </location_departure>
+        <id_train> 041 </id_train>
+        <location_departure> 41 </location_departure>
         <location_arrival> 1 </location_arrival>
         <time_departure> 1 </time_departure>
         <time_arrival> 2 </time_arrival>
