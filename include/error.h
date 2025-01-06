@@ -1,6 +1,8 @@
 #ifndef _00ERROR00_
 #define _00ERROR00_
 
+#include <stdio.h>
+
 #define error(message) printf("line %d error: %s.\n", __LINE__, message)
 #define warning(message) printf("line %d warning: %s.\n", __LINE__, message)
 

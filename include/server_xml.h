@@ -9,6 +9,7 @@
 #include <libxml2/libxml/parser.h>
 #include <libxml2/libxml/tree.h>
 
+#include "error.h"
 #include "route.h"
 
 int write_xml()
@@ -18,7 +19,7 @@ int write_xml()
     {
         char *arguments[1];
         execv("../include/dev/write_xml", arguments);
-        printf("error: execv failed.\n");
+        error("execv failed");
         return EXIT_FAILURE;
     }
     else
@@ -30,26 +31,28 @@ int write_xml()
 }
 
 struct rr_route schedule[COUNT_ROUTES_MAX];
+unsigned short count_routes = 0;
 int read_xml(const char *const path)
 {
-    // useful function witch doesn't work: xmlKeepBlanksDefault();
     xmlDocPtr document = xmlParseFile(path);
     if (NULL == document)
     {
-        printf("error: read_xml() failed - wrong path.\n");
+        error("read_xml() failed - wrong path.\n");
         exit(EXIT_FAILURE);
     }
 
     xmlNodePtr route_node;
-    route_node = xmlDocGetRootElement(document)->xmlChildrenNode->next;
+    route_node = xmlDocGetRootElement(
+                     document)
+                     ->xmlChildrenNode->next;
     if (NULL == route_node)
     {
-        printf("error: read_xml() failed - invalid xml document.\n");
+        error("read_xml() failed - invalid xml document.\n");
         xmlFreeDoc(document);
         exit(EXIT_FAILURE);
     }
 
-    size_t index_route = 0;
+    unsigned short index_route = 0;
     for (; route_node; route_node = route_node->next)
     {
         if (0 == xmlStrcmp(route_node->name, (const xmlChar *)"text"))
@@ -115,8 +118,28 @@ int read_xml(const char *const path)
     }
 
     set_last_r(&schedule[index_route]);
+    count_routes = index_route;
     xmlFreeDoc(document);
     return EXIT_SUCCESS;
+}
+
+int test_xml(const char *const path)
+{
+    xmlDocPtr document = xmlParseFile(path);
+    if (NULL == document)
+    {
+        warning("read_xml() failed - wrong path.\n");
+        return EXIT_FAILURE;
+    }
+
+    xmlNodePtr route_node;
+    route_node = xmlDocGetRootElement(document)->xmlChildrenNode->next;
+    if (NULL == route_node)
+    {
+        warning("read_xml() failed - invalid xml document.\n");
+        xmlFreeDoc(document);
+        return EXIT_FAILURE;
+    }
 }
 
 #endif

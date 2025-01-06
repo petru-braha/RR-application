@@ -1,11 +1,9 @@
 ### objectives: order of implementation
 
-0. xml read
-0. encoding - not dumb client application
-0. the already defined api
+0. 00:00 rereading file
+0. encoding decoding - client and server
 0. conc_serv
 0. login logout and register
-0. random generator of xml files
 
 ### terminology
 
@@ -60,3 +58,4 @@
 
 - all errno numbers: /usr/include/asm-generic/errno.h
 - if the server has problems with clients, it won't shut down; instead the clients will be forced to restart the connection
+- useful function witch doesn't work: xmlKeepBlanksDefault();

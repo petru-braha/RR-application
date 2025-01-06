@@ -49,7 +49,7 @@ int sd_udp = -1;
 // a server should always be online
 bool running_condition()
 {
-    int fd = open("include/dev/key.txt", O_RDONLY);
+    int fd = open("../include/dev/key.txt", O_RDONLY);
     call_var(fd);
 
     char key = '0';
@@ -104,9 +104,6 @@ void *udp_communication(void *)
 // main thread; in total being: three main threads
 int main(int argc, char *argv[])
 {
-    // at 00:00 romania time
-    // if a path was provided then read it again at 00:00
-    // else automatically generate another file
     if (argc > 2)
     {
         error("please provide at most one xml file path.\n");
@@ -120,15 +117,20 @@ int main(int argc, char *argv[])
         write_xml();
     }
     else
-        strcat(path_xml, argv[1]);
+    {
+        char path_tmp[BYTES_PATH_MAX];
+        strcpy(path_tmp, path_xml);
+        strcat(path_tmp, argv[1]);
+        if (test_xml(path_tmp))
+            strcat(path_xml, argv[1]);
+        else
+            strcat(path_xml, "random schedule.xml");
+    }
+
     read_xml(path_xml);
 
-    for (size_t i = 0; i < COUNT_ROUTES_MAX; i++)
-    {
-        if (is_last_route(schedule[i]))
-            break;
+    for (unsigned short i = 0; i < count_routes; i++)
         server_print(schedule[i]);
-    }
 
     return 0;
 
