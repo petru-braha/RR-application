@@ -185,11 +185,7 @@ ssize_t recv_tcp(char *outcome)
 
 ssize_t recv_outcome(const char command, char *outcome)
 {
-  bzero(outcome, BYTES_OUTCOME_MAX);
-
-  if (0 == strcmp(command, "report"))
-    return recv_tcp(outcome);
-  if (0 == strcmp(command, "quit"))
+  if(TCP_REPORT == command || TCP_QUIT == command)
     return recv_tcp(outcome);
 
   socklen_t length = sizeof(skadd_server);

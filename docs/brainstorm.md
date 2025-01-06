@@ -1,5 +1,6 @@
 ### objectives: order of implementation
 
+0. limit generation to 10000
 0. 00:00 rereading file
 0. encoding decoding - client and server
 0. conc_serv

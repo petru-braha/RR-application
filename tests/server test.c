@@ -121,16 +121,20 @@ int main(int argc, char *argv[])
         char path_tmp[BYTES_PATH_MAX];
         strcpy(path_tmp, path_xml);
         strcat(path_tmp, argv[1]);
-        if (test_xml(path_tmp))
+        if (0 == test_xml(path_tmp))
             strcat(path_xml, argv[1]);
         else
+        {
             strcat(path_xml, "random schedule.xml");
+            write_xml();
+        }
     }
 
     read_xml(path_xml);
 
-    for (unsigned short i = 0; i < count_routes; i++)
-        server_print(schedule[i]);
+    printf("%d routes count\n", count_routes);
+    for (unsigned short i = 0; i < count_routes; i++);
+//        server_print(schedule[i]);
 
     return 0;
 

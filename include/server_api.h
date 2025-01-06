@@ -15,6 +15,120 @@
 extern struct rr_route schedule[COUNT_ROUTES_MAX];
 extern unsigned short count_routes;
 
+// today
+void routes(struct rr_route *data,
+            unsigned short *const count,
+            const unsigned short *l_d,
+            const unsigned short *l_a)
+{
+    if (NULL == data)
+    {
+        error("routes() received null data");
+        *count = 0;
+        return;
+    }
+
+    if (NULL == l_d || NULL == l_a)
+    {
+        warning("routes() received null arguments");
+        unsigned short location0 = 0, location1 = 1;
+        l_d = &location0;
+        l_a = &location1;
+    }
+
+    unsigned short index_route = 0;
+    for (unsigned short i = 0; i < count_routes; i++)
+        if (schedule[i].location_departure == *l_d &&
+            schedule[i].location_arrival == *l_a)
+            data[index_route++] = schedule[i];
+
+    *count = index_route;
+}
+
+// in the next hour
+void departures(struct rr_route *data,
+                unsigned short *const count,
+                const unsigned short *l_d)
+{
+    if (NULL == data)
+    {
+        error("departures() received null data");
+        *count = 0;
+        return;
+    }
+
+    if (NULL == l_d)
+    {
+        warning("departures() received null arguments");
+        unsigned short location0 = 0;
+        l_d = &location0;
+    }
+
+    time_t t = time(NULL);
+    struct tm tm = *localtime(&t);
+    unsigned short next_hour = (tm.tm_hour + 1) * 60 + tm.tm_min;
+
+    unsigned short index_route = 0;
+    for (unsigned short i = 0; i < count_routes; i++)
+        if (schedule[i].time_departure == next_hour)
+            data[index_route++] = schedule[i];
+
+    *count = index_route;
+}
+
+// in the next hour
+void arrivals(struct rr_route *data,
+              unsigned short *const count,
+              const unsigned short *l_d)
+
+{
+    if (NULL == data)
+    {
+        error("arrivals() received null data");
+        *count = 0;
+        return;
+    }
+
+    if (NULL == l_d)
+    {
+        warning("arrivals() received null arguments");
+        unsigned short location0 = 0;
+        l_d = &location0;
+    }
+
+    time_t t = time(NULL);
+    struct tm tm = *localtime(&t);
+    unsigned short next_hour = (tm.tm_hour + 1) * 60 + tm.tm_min;
+
+    unsigned short index_route = 0;
+    for (unsigned short i = 0; i < count_routes; i++)
+        if (schedule[i].time_arrival == next_hour)
+            data[index_route++] = schedule[i];
+
+    *count = index_route;
+}
+
+void report(unsigned short *const flag,
+            const unsigned short *const id_train,
+            const unsigned short *const minutes)
+{
+    if (NULL == id_train || NULL == minutes)
+    {
+        *flag = 0;
+        return;
+    }
+
+    if (*id_train >= count_routes || *minutes >= UCHAR_MAX)
+    {
+        *flag = 0;
+        return;
+    }
+
+    schedule[*id_train].time_arrival += *minutes;
+}
+
+//------------------------------------------------
+
 [[deprecated("parsing should be simple - just one byte")]]
 void parse_command(const char *command, char *outcome)
 {
@@ -79,112 +193,6 @@ void parse(const unsigned char command,
     // invalid command
     set_last(&data[0]);
     *count = 0;
-}
-
-// today
-void routes(struct rr_route *data,
-            unsigned short *const count,
-            const unsigned short *l_d,
-            const unsigned short *l_a)
-{
-    if (NULL == data)
-    {
-        error("routes() received null data");
-        *count = 0;
-        return;
-    }
-
-    if (NULL == l_d || NULL == l_a)
-    {
-        warning("routes() received null arguments");
-        int location0 = 0, location1 = 1;
-        l_d = &location0;
-        l_a = &location1;
-    }
-
-    unsigned short index_route = 0;
-    for (unsigned short i = 0; i < count_routes; i++)
-        if (schedule[i].location_departure == *l_d &&
-            schedule[i].location_arrival == *l_a)
-            data[index_route++] = schedule[i];
-
-    *count = index_route;
-}
-
-// in the next hour
-void departures(struct rr_route *data,
-                unsigned short *const count,
-                const unsigned short *l_d)
-{
-    if (NULL == data)
-    {
-        error("departures() received null data");
-        *count = 0;
-        return;
-    }
-
-    if (NULL == l_d)
-    {
-        warning("departures() received null arguments");
-        int location0 = 0;
-        l_d = &location0;
-    }
-
-    time_t t = time(NULL);
-    struct tm tm = *localtime(&t);
-    unsigned short next_hour = (tm.tm_hour + 1) * 60 + tm.tm_min;
-
-    unsigned short index_route = 0;
-    for (unsigned short i = 0; i < count_routes; i++)
-        if (schedule[i].time_departure == next_hour)
-            data[index_route++] = schedule[i];
-
-    *count = index_route;
-}
-
-// in the next hour
-void arrivals(struct rr_route *data,
-              unsigned short *const count,
-              const unsigned short *l_d)
-
-{
-    if (NULL == data)
-    {
-        error("arrivals() received null data");
-        *count = 0;
-        return;
-    }
-
-    if (NULL == l_d)
-    {
-        warning("arrivals() received null arguments");
-        int location0 = 0;
-        l_d = &location0;
-    }
-
-    time_t t = time(NULL);
-    struct tm tm = *localtime(&t);
-    unsigned short next_hour = (tm.tm_hour + 1) * 60 + tm.tm_min;
-
-    unsigned short index_route = 0;
-    for (unsigned short i = 0; i < count_routes; i++)
-        if (schedule[i].time_arrival == next_hour)
-            data[index_route++] = schedule[i];
-
-    *count = index_route;
-}
-
-void report(unsigned short *const flag,
-            const unsigned short id_train,
-            const unsigned char minutes)
-{
-    if (id_train >= count_routes || minutes >= 256)
-    {
-        *flag = 0;
-        return;
-    }
-
-    schedule[id_train].time_arrival += minutes;
 }
 
 #endif

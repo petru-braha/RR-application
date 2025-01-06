@@ -17,8 +17,7 @@ int write_xml()
     pid_t process = fork();
     if (0 == process)
     {
-        char *arguments[1];
-        execv("../include/dev/write_xml", arguments);
+        execv("../include/dev/write_xml", NULL);
         error("execv failed");
         return EXIT_FAILURE;
     }
@@ -55,6 +54,7 @@ int read_xml(const char *const path)
     unsigned short index_route = 0;
     for (; route_node; route_node = route_node->next)
     {
+
         if (0 == xmlStrcmp(route_node->name, (const xmlChar *)"text"))
             continue;
 
@@ -117,7 +117,7 @@ int read_xml(const char *const path)
         schedule[index_route++] = new_route;
     }
 
-    set_last_r(&schedule[index_route]);
+    set_last(&schedule[index_route]);
     count_routes = index_route;
     xmlFreeDoc(document);
     return EXIT_SUCCESS;
@@ -140,6 +140,8 @@ int test_xml(const char *const path)
         xmlFreeDoc(document);
         return EXIT_FAILURE;
     }
+
+    return EXIT_SUCCESS;
 }
 
 #endif
