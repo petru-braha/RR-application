@@ -104,7 +104,7 @@ void *udp_communication(void *)
 // main thread; in total being: three main threads
 int main(int argc, char *argv[])
 {
-    // at 00:00 
+    // at 00:00 romania time
     // if a path was provided then read it again at 00:00
     // else automatically generate another file
     if (argc > 2)
@@ -112,18 +112,23 @@ int main(int argc, char *argv[])
         error("please provide at most one xml file path.\n");
         exit(EXIT_FAILURE);
     }
-/*/
-    char path_xml[BYTES_PATH_MAX] =
-        "../include/data/random schedule.xml";
-    if (2 == argc)
-        strcpy(path_xml, argv[1]);
-    else
-        write_xml();
-    read_xml(path_xml);
-*/
 
-    for(size_t i = 0; i < COUNT_ROUTES_MAX && ; i++)
-        server_print(routes[i]);
+    char path_xml[BYTES_PATH_MAX] = "../include/data/";
+    if (1 == argc)
+    {
+        strcat(path_xml, "random schedule.xml");
+        write_xml();
+    }
+    else
+        strcat(path_xml, argv[1]);
+    read_xml(path_xml);
+
+    for (size_t i = 0; i < COUNT_ROUTES_MAX; i++)
+    {
+        if (is_last_route(schedule[i]))
+            break;
+        server_print(schedule[i]);
+    }
 
     return 0;
 

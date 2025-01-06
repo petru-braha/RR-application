@@ -9,14 +9,15 @@
 #include <libxml2/libxml/parser.h>
 #include <libxml2/libxml/tree.h>
 
-#include "../include/route.h"
+#include "route.h"
 
 int write_xml()
 {
     pid_t process = fork();
     if (0 == process)
     {
-        execl("../include/dev/write_xml", NULL);
+        char *arguments[1];
+        execv("../include/dev/write_xml", arguments);
         printf("error: execv failed.\n");
         return EXIT_FAILURE;
     }
@@ -28,7 +29,7 @@ int write_xml()
     }
 }
 
-struct rr_route routes[COUNT_ROUTES_MAX];
+struct rr_route schedule[COUNT_ROUTES_MAX];
 int read_xml(const char *const path)
 {
     // useful function witch doesn't work: xmlKeepBlanksDefault();
@@ -60,9 +61,9 @@ int read_xml(const char *const path)
 
         // location
         data = route_node->xmlChildrenNode;
-        while(data && 0 == xmlStrcmp(data->name, (const xmlChar *)"text"))
+        while (data && 0 == xmlStrcmp(data->name, (const xmlChar *)"text"))
             data = data->next;
-        if(NULL == data)
+        if (NULL == data)
             continue;
         pulled = xmlNodeListGetString(document, data->xmlChildrenNode, 1);
         new_route.location_departure =
@@ -71,10 +72,11 @@ int read_xml(const char *const path)
         if (new_route.location_departure >= COUNT_LOCATION) // error
             continue;
 
+        // location
         data = data->next;
-        while(data && 0 == xmlStrcmp(data->name, (const xmlChar *)"text"))
+        while (data && 0 == xmlStrcmp(data->name, (const xmlChar *)"text"))
             data = data->next;
-        if(NULL == data)
+        if (NULL == data)
             continue;
         pulled = xmlNodeListGetString(document, data->xmlChildrenNode, 1);
         new_route.location_arrival =
@@ -85,9 +87,9 @@ int read_xml(const char *const path)
 
         // time
         data = data->next;
-        while(data && 0 == xmlStrcmp(data->name, (const xmlChar *)"text"))
+        while (data && 0 == xmlStrcmp(data->name, (const xmlChar *)"text"))
             data = data->next;
-        if(NULL == data)
+        if (NULL == data)
             continue;
         pulled = xmlNodeListGetString(document, data->xmlChildrenNode, 1);
         new_route.time_departure =
@@ -96,10 +98,11 @@ int read_xml(const char *const path)
         if (new_route.time_departure >= TIME_MAX) // error
             continue;
 
+        // time
         data = data->next;
-        while(data && 0 == xmlStrcmp(data->name, (const xmlChar *)"text"))
+        while (data && 0 == xmlStrcmp(data->name, (const xmlChar *)"text"))
             data = data->next;
-        if(NULL == data)
+        if (NULL == data)
             continue;
         pulled = xmlNodeListGetString(document, data->xmlChildrenNode, 1);
         new_route.time_arrival =
@@ -108,9 +111,10 @@ int read_xml(const char *const path)
         if (new_route.time_arrival >= TIME_MAX) // error
             continue;
 
-        routes[index_route++] = new_route;
+        schedule[index_route++] = new_route;
     }
 
+    set_last_r(&schedule[index_route]);
     xmlFreeDoc(document);
     return EXIT_SUCCESS;
 }
