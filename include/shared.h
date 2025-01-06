@@ -7,6 +7,7 @@
 #include "dev/tcp_communication.h"
 #include "computation.h"
 #include "error.h"
+#include "printer.h"
 
 //------------------------------------------------
 // constants:
@@ -14,7 +15,7 @@
 const int NO_FLAG = 0;
 #define BYTES_COMMAND_MAX 20
 #define BYTES_OUTCOME_MAX 100
-#define BYTES_PATH_MAX 27
+#define BYTES_PATH_MAX 50
 
 // const char path_database[] = "dev/users.txt";
 

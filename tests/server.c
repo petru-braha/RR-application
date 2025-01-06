@@ -19,9 +19,9 @@
 #include <string.h>
 #include <stdbool.h>
 
-#include "include/shared.h"
-#include "include/command.h"
-#include "include/server_file.h"
+#include "../include/shared.h"
+#include "../include/server_xml.h"
+#include "../include/server_api.h"
 
 //------------------------------------------------
 //! global variables
@@ -100,25 +100,32 @@ void *udp_communication(void *)
 }
 
 //------------------------------------------------
-
-// void generate_
-
+// gcc server.c -I/usr/include/libxml2 -lxml2 -o sv
 // main thread; in total being: three main threads
 int main(int argc, char *argv[])
 {
-    // option decide what happens at 00:00
-    // at 00:00 romania time automatically generate another file
+    // at 00:00 
+    // if a path was provided then read it again at 00:00
+    // else automatically generate another file
     if (argc > 2)
     {
         error("please provide at most one xml file path.\n");
         exit(EXIT_FAILURE);
     }
-
-    char path[BYTES_PATH_MAX] =
+/*/
+    char path_xml[BYTES_PATH_MAX] =
         "../include/data/random schedule.xml";
     if (2 == argc)
-        strcpy(path, argv[1]);
-    read_xml(path);
+        strcpy(path_xml, argv[1]);
+    else
+        write_xml();
+    read_xml(path_xml);
+*/
+
+    for(size_t i = 0; i < COUNT_ROUTES_MAX && ; i++)
+        server_print(routes[i]);
+
+    return 0;
 
     // server address
     struct sockaddr_in skadd_server;

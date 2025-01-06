@@ -32,13 +32,13 @@ void location_generation(std::vector<rr_route> &);
 void schedule_generation(std::vector<rr_route> &);
 void document_generation(const char *const);
 
-// g++ write_xml.c -I/usr/include/libxml2 -lxml2
+// g++ write_xml.cpp -I/usr/include/libxml2 -lxml2 -o write_xml
 int main()
 {
 	size_t count_routes = 0;
 	std::vector<rr_route> routes(COUNT_LOCATION);
 	const char path[] =
-		"../data/random schedule.xml";
+		"../include/data/random schedule.xml";
 
 	location_generation(routes);
 	schedule_generation(routes);
@@ -48,7 +48,7 @@ int main()
 	xmlDocPtr document = xmlParseFile(path);
 	if (NULL == document)
 	{
-		printf("error: wrong path.\n");
+		printf("error: write_xml - wrong path.\n");
 		exit(EXIT_FAILURE);
 	}
 
@@ -56,7 +56,7 @@ int main()
 	root_node = xmlDocGetRootElement(document);
 	if (NULL == root_node)
 	{
-		printf("error: invalid xml document.\n");
+		printf("error: write_xml - invalid xml document.\n");
 		xmlFreeDoc(document);
 		exit(EXIT_FAILURE);
 	}
@@ -102,8 +102,7 @@ int main()
 		node = node->next;
 	}
 
-	printf("%zu\n", routes.size());
-
+	printf("%zu routes were generated.\n", routes.size());
 	xmlSaveFormatFile(path, document, 1);
 	xmlFreeDoc(document);
 	return EXIT_SUCCESS;
@@ -126,7 +125,7 @@ void select(const size_t count_index, size_t *const results)
 {
 	if (nullptr == results)
 	{
-		printf("error: select failed - nullptr results.\n");
+		printf("error: write_xml failed - select().\n");
 		exit(EXIT_FAILURE);
 	}
 
@@ -209,28 +208,28 @@ void schedule_generation(std::vector<rr_route> &routes)
 void document_generation(const char *const path)
 {
 	FILE *xml = fopen(path, "w");
-	if (NULL == xml)
+	if (nullptr == xml)
 	{
-		printf("error: fopen failed - wrong path.\n");
+		printf("error: write_xml failed - fopen().\n");
 		exit(EXIT_FAILURE);
 	}
 
 	const char s0[] = "<schedule>\n", s1[] = "</schedule>";
 	if (0 == fwrite(s0, sizeof(char), strlen(s0), xml))
 	{
-		printf("error: fwrite failed - could not initialise file.\n");
+		printf("error: write_xml failed - fwrite().\n");
 		exit(EXIT_FAILURE);
 	}
 
 	if (0 == fwrite(s1, sizeof(char), strlen(s1), xml))
 	{
-		printf("error: fwrite failed - could not initialise file.\n");
+		printf("error: write_xml failed - fwrite().\n");
 		exit(EXIT_FAILURE);
 	}
 
 	if (fclose(xml))
 	{
-		printf("error: fclose failed - could not close the file.\n");
+		printf("error: write_xml failed - fclose().\n");
 		exit(EXIT_FAILURE);
 	}
 }

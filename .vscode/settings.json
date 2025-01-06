@@ -69,7 +69,9 @@
     "stop_token": "cpp",
     "streambuf": "cpp",
     "thread": "cpp",
-    "cinttypes": "cpp"
+    "cinttypes": "cpp",
+    "server_file.h": "c",
+    "server_api.h": "c"
   },
   "C_Cpp_Runner.cCompilerPath": "gcc",
   "C_Cpp_Runner.cppCompilerPath": "g++",

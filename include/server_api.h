@@ -37,13 +37,12 @@ void parse_command(const char *command, char *outcome)
     strcat(outcome, "invalid command");
 }
 
-/*
-const size_t count_routes_max = 100;
-struct rr_route schedule[count_routes_max];
+void parse_command2(const char *command, char *outcome);
+extern struct rr_route schedule[COUNT_ROUTES_MAX];
 
 void routes(int location_departure, int location_arrival, int sd)
 {
-    for (size_t i = 0; i < count_routes_max; i++)
+    for (size_t i = 0; i < COUNT_ROUTES_MAX; i++)
     {
         if (schedule[i].location_departure == location_departure &&
             schedule[i].location_arrival == location_arrival)
@@ -70,6 +69,8 @@ void departures(int location_departure, struct rr_time now, int sd)
 // in the next hour
 void arrival(int location_arrival, struct rr_time now, int sd);
 
+void report(int sd);
+
 void quit(int sd);
-*/
+
 #endif
