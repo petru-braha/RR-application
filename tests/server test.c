@@ -100,7 +100,7 @@ void *udp_communication(void *)
 }
 
 //------------------------------------------------
-// gcc server.c -I/usr/include/libxml2 -lxml2 -o sv
+// gcc server\ test.c -I/usr/include/libxml2 -lxml2 -o sv
 // main thread; in total being: three main threads
 int main(int argc, char *argv[])
 {
@@ -125,6 +125,7 @@ int main(int argc, char *argv[])
             strcat(path_xml, argv[1]);
         else
         {
+            argc = 1; // later generations
             strcat(path_xml, "random schedule.xml");
             write_xml();
         }
@@ -133,8 +134,8 @@ int main(int argc, char *argv[])
     read_xml(path_xml);
 
     printf("%d routes count\n", count_routes);
-    for (unsigned short i = 0; i < count_routes; i++);
-//        server_print(schedule[i]);
+    for (unsigned short i = 0; i < count_routes; i++)
+        server_print(schedule[i]);
 
     return 0;
 
@@ -180,6 +181,29 @@ int main(int argc, char *argv[])
     call(printf("the server is online.\n\n"));
     for (; running_condition();)
     {
+        // maintenance time
+        time_t t = time(NULL);
+        struct tm tm = *localtime(&t);
+        if (0 == tm.tm_hour && 0 == tm.tm_min)
+        {
+            // close threads
+            call0(pthread_join(multiplexing_thread, NULL));
+            call0(pthread_join(udp_thread, NULL));
+            for (int fd = 0; fd < descriptors.count; fd++)
+                if (FD_ISSET(fd, &descriptors.container))
+                    call(printf("warning: %d is not closed.\n", fd));
+
+            if (1 == argc)
+                write_xml();
+            read_xml(path_xml);
+
+            // restart threads
+            call0(pthread_create(&multiplexing_thread, NULL,
+                                 &multiplexing, NULL));
+            call0(pthread_create(&udp_thread, NULL,
+                                 &udp_communication, NULL));
+        }
+
         // error check
         if (0 != errno)
         {
