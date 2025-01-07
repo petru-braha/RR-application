@@ -1,4 +1,3 @@
-București
 Alba
 Arad
 Arges
@@ -37,6 +36,6 @@ Suceava
 Teleorman
 Timiș
 Tulcea
-Vâlcea
 Vaslui
+Vâlcea
 Vrancea

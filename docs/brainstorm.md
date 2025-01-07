@@ -1,9 +1,6 @@
 ### objectives: order of implementation
 
-0. recv command
-0. printing parse
-0. test enconding
-0. test decoding
+0. status
 0. test maintenance time
 0. test entire application
 
