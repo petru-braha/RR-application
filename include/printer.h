@@ -112,6 +112,7 @@ void stringtocode(const unsigned char *const string,
 void client_print(struct rr_route r,
                   const char *const path)
 {
+  // store how many minute it was late
   // todo check for flags and print and delete/store
   char d[BYTES_COMMAND_MAX], a[BYTES_COMMAND_MAX];
   codetostring(d, r.location_departure, path);

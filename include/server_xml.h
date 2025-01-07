@@ -12,13 +12,20 @@
 #include "error.h"
 #include "route.h"
 
-int write_xml()
+// takes a path of the binary file
+int write_xml(const char *const path)
 {
+    if (NULL == path)
+    {
+        error("write_xml() failed - null path");
+        return EXIT_FAILURE;
+    }
+
     pid_t process = fork();
     if (0 == process)
     {
-        execv("../include/dev/write_xml", NULL);
-        error("execv failed");
+        execv(path, NULL);
+        error("write_xml() failed - execv()");
         return EXIT_FAILURE;
     }
     else
@@ -31,6 +38,8 @@ int write_xml()
 
 struct rr_route schedule[COUNT_ROUTES_MAX];
 unsigned short count_routes = 0;
+
+// takes a path of the file to be read
 int read_xml(const char *const path)
 {
     xmlDocPtr document = xmlParseFile(path);
@@ -114,6 +123,9 @@ int read_xml(const char *const path)
         if (new_route.time_arrival >= TIME_MAX) // error
             continue;
 
+        if (new_route.location_departure ==
+            new_route.location_arrival)
+            continue;
         schedule[index_route++] = new_route;
     }
 

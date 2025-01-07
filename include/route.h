@@ -15,13 +15,10 @@
 #define TIME_MIN 0
 #define TIME_MAX 1441
 
-// NDNA == not departed not arrived
-#define STATUS_NDNA 0
-#define STATUS_YDNA 100
-#define STATUS_YDYA 200
-#define STATUS_OKAY 0
-#define STATUS_LATE 99
-#define STATUS_FAIL 199
+// no need to store if departed/arrived
+// it can be deduced by the local time
+// no need to store if late/fail
+// it can be deduced by late minutes
 
 struct rr_route
 {
@@ -34,7 +31,7 @@ struct rr_route
 void set_last(struct rr_route *r)
 {
     if (NULL == r)
-        warning("set_last() failed - invalid pointer");
+        warning("set_last() failed - null pointer");
 
     r->location_departure = UCHAR_MAX;
     r->location_arrival = UCHAR_MAX;

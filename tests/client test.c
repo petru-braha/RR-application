@@ -184,7 +184,8 @@ unsigned short argument_validation0(unsigned char *buffer,
   {
     unsigned char *condition = NULL;
     int number_base = 10;
-    unsigned long number = strtoul(buffer, &condition, number_base);
+    unsigned long number =
+        strtoul(buffer, &condition, number_base);
     if (' ' != *condition)
     {
       warning("strtoul() failed");
@@ -236,7 +237,8 @@ unsigned short argument_validation1(unsigned char *buffer,
   {
     unsigned char *condition = NULL;
     int number_base = 10;
-    unsigned long number = strtoul(buffer, &condition, number_base);
+    unsigned long number =
+        strtoul(buffer, &condition, number_base);
     if ('\0' != *condition)
     {
       warning("strtoul() failed");

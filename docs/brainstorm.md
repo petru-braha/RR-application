@@ -1,6 +1,11 @@
 ### objectives: order of implementation
 
-0. status
+0. status - change to loation * time and add extra field for late
+
+- approximate
+- change to loation * time and add extra field for late
+- change to loation * server store late - bad : no flag
+
 0. test maintenance time
 0. test entire application
 
@@ -15,8 +20,8 @@
 
 ### disconnection
 
-- if clients disconnect during operation => server warning
-- same for server shutdown => close clients with appropriate message
+- client disconnects during operation => server warning
+- server shutdowns during operation => close clients
 
 ### data encoding
 

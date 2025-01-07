@@ -23,28 +23,17 @@
 #include "../include/server_xml.h"
 #include "../include/server_api.h"
 
-//------------------------------------------------
-// global variables
-
-const uint16_t port = 2970;
-
-const int ONE_CLIENT_ONLY = 1;
-const int TWO_CLIENT_ONLY = 2;
-const int COUNT_CLIENT_MAX = 1024;
-
 typedef struct
 {
     fd_set container;
     int count;
 } rr_fd;
 
-struct timeval TV = {1, 0};
 rr_fd descriptors;
 
 int sd_udp = -1;
 
 //------------------------------------------------
-//! methods
 
 // a server should always be online
 bool running_condition()
@@ -78,7 +67,7 @@ int main(int argc, char *argv[])
     if (1 == argc)
     {
         strcat(path_xml, "random schedule.xml");
-        write_xml();
+        write_xml("../include/dev/write_xml");
     }
     else
     {
@@ -91,7 +80,7 @@ int main(int argc, char *argv[])
         {
             argc = 1; // later generations
             strcat(path_xml, "random schedule.xml");
-            write_xml();
+            write_xml("../include/dev/write_xml");
         }
     }
 
@@ -104,6 +93,7 @@ int main(int argc, char *argv[])
     return 0;
 
     // server address
+    const uint16_t port = 2970;
     struct sockaddr_in skadd_server;
     skadd_server.sin_family = AF_INET;
     skadd_server.sin_addr.s_addr = htonl(INADDR_ANY);
@@ -112,6 +102,10 @@ int main(int argc, char *argv[])
     FD_ZERO(&descriptors.container);
 
     // tcp
+    const int ONE_CLIENT_ONLY = 1;
+    const int TWO_CLIENT_ONLY = 2;
+    const int COUNT_CLIENT_MAX = 1024;
+
     int sd_listen =
         socket(AF_INET,
                SOCK_STREAM | SOCK_NONBLOCK, 0);
@@ -159,7 +153,7 @@ int main(int argc, char *argv[])
                     call(printf("warning: %d is not closed.\n", fd));
 
             if (1 == argc)
-                write_xml();
+                write_xml("../include/dev/write_xml");
             read_xml(path_xml);
 
             // restart threads
@@ -205,6 +199,7 @@ int main(int argc, char *argv[])
 // receives three bytes sends two bytes at minimum
 void *udp_communication(void *)
 {
+    // todo received udp socket as parameter not global
     unsigned char buffer[3];
     struct sockaddr_in skaddr_client;
     socklen_t length = sizeof(skaddr_client);
@@ -295,6 +290,7 @@ void *tcp_communication(int sd)
 
 void *multiplexing(void *)
 {
+    struct timeval TV = {1, 0};
     for (; running_condition();)
     {
         fd_set tcp_fd;
