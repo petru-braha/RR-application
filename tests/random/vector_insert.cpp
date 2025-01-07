@@ -1,6 +1,7 @@
 #include <iostream>
 #include <vector>
 
+// success
 int main()
 {
     size_t order = 4;

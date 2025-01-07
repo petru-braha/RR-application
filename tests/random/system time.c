@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <time.h>
 
+// success
 /* https://stackoverflow.com/questions/1442116/how-to-get-the-date-and-time-values-in-a-c-program */
 int main()
 {

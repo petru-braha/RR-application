@@ -3,6 +3,7 @@
 #include <string.h>
 #include <libxml2/libxml/parser.h>
 
+// success
 // gcc test_insert.c -I/usr/include/libxml2 -lxml2
 int main()
 {

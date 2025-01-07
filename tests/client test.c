@@ -25,12 +25,25 @@
 
 //------------------------------------------------
 
-#define UDP_ROUTES 250
-#define UDP_DEPARTURES 251
-#define UDP_ARRIVALS 252
-#define TCP_REPORT 5
-#define TCP_QUIT 6
-#define RETRY 0
+#define LEN_ROUTES 6
+#define LEN_DEPARTURES 10
+#define LEN_ARRIVALS 8
+#define LEN_REPORT 6
+#define LEN_QUIT 4
+
+#define UDP_STRING_R "routes"
+#define UDP_STRING_D "departures"
+#define UDP_STRING_A "arrivals"
+#define TCP_STRING_R "report"
+#define TCP_STRING_Q "quit"
+
+#define UDP_CODE_R 250
+#define UDP_CODE_D 251
+#define UDP_CODE_A 252
+#define TCP_CODE_R 5
+#define TCP_CODE_Q 6
+#define RETRY_COMMAND 0
+#define RETRY_ARGUMENT COUNT_ROUTES_MAX
 
 #define RECV_FAIL 0
 
@@ -104,57 +117,128 @@ int main(int argc, char *argv[])
     send_command(command, argument0, argument1);
     recv_outcome(command, &argument0, outcome);
     print_data(command, argument0, outcome);
-    condition = strcmp(command, "quit");
+    condition = strcmp(command, TCP_STRING_Q);
   }
 
   exit_client(EXIT_SUCCESS);
 }
 
 //------------------------------------------------
-//! other
+//! protocol parsing methods
 
-unsigned char command_validation(char *const string)
+// DOES NOT provides error messages
+unsigned char command_validation(unsigned char *buffer)
 {
-  // repair
-  size_t index = strlen(string) - 1;
-  string[index] = '\0';
+  if (buffer == strstr(buffer, UDP_STRING_R))
+  {
+    strcpy(buffer, buffer + LEN_ROUTES);
+    return UDP_CODE_R;
+  }
 
-  // copy
-  char buffer[BYTES_COMMAND_MAX];
-  strcpy(buffer, string);
+  if (buffer == strstr(buffer, UDP_STRING_D))
+  {
+    strcpy(buffer, buffer + LEN_DEPARTURES);
+    return UDP_CODE_D;
+  }
 
-  if (0 == strcmp(buffer, "routes"))
-    return UDP_ROUTES;
-  if (0 == strcmp(buffer, "departures"))
-    return UDP_DEPARTURES;
-  if (0 == strcmp(buffer, "arrivals"))
-    return UDP_ARRIVALS;
-  if (0 == strcmp(buffer, "report"))
-    return TCP_REPORT;
-  if (0 == strcmp(buffer, "quit"))
-    return TCP_QUIT;
-  return RETRY;
+  if (buffer == strstr(buffer, UDP_STRING_A))
+  {
+    strcpy(buffer, buffer + LEN_ARRIVALS);
+    return UDP_CODE_A;
+  }
+
+  if (buffer == strstr(buffer, TCP_STRING_R))
+  {
+    strcpy(buffer, buffer + LEN_REPORT);
+    return TCP_CODE_R;
+  }
+
+  if (buffer == strstr(buffer, TCP_STRING_Q))
+  {
+    strcpy(buffer, buffer + LEN_QUIT);
+    return TCP_CODE_Q;
+  }
+
+  return RETRY_COMMAND;
 }
 
-unsigned short argument_validation()
+// DOES NOT provides error messages
+unsigned short argument_validation(unsigned char *buffer,
+                                   const unsigned char command)
 {
+  if (RETRY_COMMAND == command)
+    return RETRY_ARGUMENT;
+
+  unsigned char *pointer = strchr(buffer, ' ');
+  unsigned char old_value = *pointer;
+  *pointer = '\0';
+  int number = atoi(buffer);
+
+  *pointer = old_value;
+
+  if (command >= UDP_CODE_R)
+  {
+    int number = atoi(buffer);
+    // strcpy
+    // return
+
+    if (0) // fail
+      return
+  }
+
+  if (TCP_CODE_Q == command)
+  {
+    if (buffer[4] != '\0')
+    {
+      warning("quit does not take arguments");
+      return RETRY_ARGUMENT;
+    }
+
+    return TCP_CODE_Q;
+  }
+
+  return RETRY_ARGUMENT;
 }
 
-// each command has at most two arguments
+/* each command has at most two arguments
+ * provides error messages
+ */
 static ssize_t recv_command(unsigned char *const command,
                             unsigned short *const argument0,
                             unsigned short *const argument1)
 {
-  char string[BYTES_COMMAND_MAX];
-  ssize_t bytes = read_all(STDIN_FILENO, string,
-                           BYTES_COMMAND_MAX);
-  *command = valid_command(string);
+  *command = RETRY_COMMAND;
 
-  while (RETRY == *command)
+  ssize_t bytes = 0;
+  char line[BYTES_COMMAND_MAX];
+  for (; RETRY_COMMAND == *command ||
+         COUNT_ROUTES_MAX == *argument0 ||
+         COUNT_ROUTES_MAX == *argument1;)
   {
-    bytes = read_all(STDIN_FILENO, string,
-                     BYTES_COMMAND_MAX);
-    *command = valid_command(string);
+    bytes = read_all(STDIN_FILENO, line, sizeof(line));
+    if (BYTES_COMMAND_MAX != bytes)
+    {
+      error("read_all() failed - standard input");
+      continue;
+    }
+
+    *command = command_validation(line);
+    if (RETRY_COMMAND == *command)
+    {
+      warning("invalid command");
+      continue;
+    }
+
+    *argument0 = argument_validation(line, command);
+    if (RETRY_ARGUMENT == *argument0)
+    {
+      warning("invalid first argument");
+      continue;
+    }
+
+    *argument1 = argument_validation(line, command);
+    if (RETRY_ARGUMENT == *argument0)
+      warning("invalid second argument");
   }
 
   return bytes;
@@ -192,9 +276,9 @@ ssize_t send_command(const unsigned char command,
                      const unsigned short argument1)
 {
   // tcp communication if the client sends data
-  if (TCP_REPORT == command)
+  if (TCP_CODE_R == command)
     return send_tcp(command, argument0, argument1);
-  if (TCP_QUIT == command)
+  if (TCP_CODE_Q == command)
     return send_tcp(command, argument0, argument1);
 
   // udp communication for queries
@@ -234,7 +318,7 @@ ssize_t recv_outcome(const unsigned char command,
                      unsigned short *const argument0,
                      struct rr_route *const data)
 {
-  if (TCP_REPORT == command || TCP_QUIT == command)
+  if (TCP_CODE_R == command || TCP_CODE_Q == command)
     return recv_tcp(command, argument0);
 
   socklen_t length = sizeof(skadd_server);
@@ -263,7 +347,7 @@ static ssize_t print_data(const unsigned char command,
                           const unsigned short argument0,
                           const struct rr_route *const data)
 {
-  if (TCP_REPORT == command)
+  if (TCP_CODE_R == command)
   {
     if (RECV_FAIL == argument0)
       error("reporting failed");
@@ -272,7 +356,7 @@ static ssize_t print_data(const unsigned char command,
     return sizeof(unsigned char);
   }
 
-  if (TCP_QUIT == command)
+  if (TCP_CODE_Q == command)
   {
     if (RECV_FAIL == argument0)
       error("exiting failed to fetch with server");

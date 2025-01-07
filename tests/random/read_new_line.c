@@ -17,6 +17,7 @@
 
 #include "../../include/shared.h"
 
+// success
 int main()
 {
     char command[BYTES_COMMAND_MAX];

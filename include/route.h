@@ -1,6 +1,7 @@
 #ifndef _00ITINERARY00_
 #define _00ITINERARY00_
 
+#include <stdbool.h>
 #include <limits.h>
 #include "error.h"
 

@@ -31,6 +31,7 @@ void parse_location(const char *buffer,
   // todo: read data/location.txt
 }
 
+// decoding
 void client_print(struct rr_route r)
 {
   char d[10] = "Bucuresti", a[10] = "Iasi";
