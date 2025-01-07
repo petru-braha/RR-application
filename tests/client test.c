@@ -16,35 +16,17 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 
+#include "../include/communication.h"
 #include "../include/computation.h"
 #include "../include/error.h"
 #include "../include/printer.h"
 #include "../include/route.h"
 #include "../include/shared.h"
-#include "../include/route.h"
 
 //------------------------------------------------
 
-#define LEN_ROUTES 6
-#define LEN_DEPARTURES 10
-#define LEN_ARRIVALS 8
-#define LEN_REPORT 6
-#define LEN_QUIT 4
-
-#define UDP_STRING_R "routes"
-#define UDP_STRING_D "departures"
-#define UDP_STRING_A "arrivals"
-#define TCP_STRING_R "report"
-#define TCP_STRING_Q "quit"
-
-#define UDP_CODE_R 250                  // routes command
-#define UDP_CODE_D 251                  // departures command
-#define UDP_CODE_A 252                  // arrivals command
-#define TCP_CODE_R 5                    // report command
-#define TCP_CODE_Q 6                    // quit command
 #define RETRY_COMMAND 0                 // invalid commands
 #define RETRY_ARGUMENT COUNT_ROUTES_MAX // invalid argument
-
 #define RECV_FAIL 0
 
 int sd_tcp, sd_udp;
@@ -101,7 +83,7 @@ int main(int argc, char *argv[])
                     sizeof(struct sockaddr)))
   {
     call(close(sd_tcp));
-    error("udp socket failed, the first one didn't");
+    error("socket() failed - tcp success, udp failure");
     return EXIT_FAILURE;
   }
 
@@ -117,7 +99,7 @@ int main(int argc, char *argv[])
     send_command(command, argument0, argument1);
     recv_outcome(command, &argument0, outcome);
     print_data(command, argument0, outcome);
-    condition = strcmp(command, TCP_STRING_Q);
+    condition = TCP_CODE_Q == command;
   }
 
   exit_client(EXIT_SUCCESS);
@@ -127,7 +109,7 @@ int main(int argc, char *argv[])
 //! protocol parsing methods
 
 // DOES NOT provides error messages
-unsigned char command_validation(unsigned char *buffer)
+unsigned char command_validation(char *buffer)
 {
   // + 1 skips the ' ' character
   if (buffer == strstr(buffer, UDP_STRING_R))
@@ -164,7 +146,7 @@ unsigned char command_validation(unsigned char *buffer)
 }
 
 // DOES NOT provides error messages
-unsigned short argument_validation0(unsigned char *buffer,
+unsigned short argument_validation0( char *buffer,
                                     const unsigned char command)
 {
   if (RETRY_COMMAND == command)
@@ -182,7 +164,7 @@ unsigned short argument_validation0(unsigned char *buffer,
 
   if (TCP_CODE_R == command)
   {
-    unsigned char *condition = NULL;
+    char *condition = NULL;
     int number_base = 10;
     unsigned long number =
         strtoul(buffer, &condition, number_base);
@@ -210,7 +192,7 @@ unsigned short argument_validation0(unsigned char *buffer,
 }
 
 // DOES NOT provides error messages
-unsigned short argument_validation1(unsigned char *buffer,
+unsigned short argument_validation1( char *buffer,
                                     const unsigned char command,
                                     const unsigned short previous_argument)
 {
@@ -235,7 +217,7 @@ unsigned short argument_validation1(unsigned char *buffer,
 
   if (TCP_CODE_R == command)
   {
-    unsigned char *condition = NULL;
+    char *condition = NULL;
     int number_base = 10;
     unsigned long number =
         strtoul(buffer, &condition, number_base);
@@ -292,14 +274,14 @@ static ssize_t recv_command(unsigned char *const command,
       continue;
     }
 
-    *argument0 = argument_validation0(line, command);
+    *argument0 = argument_validation0(line, *command);
     if (RETRY_ARGUMENT == *argument0)
     {
       warning("invalid first argument");
       continue;
     }
 
-    *argument1 = argument_validation1(line, command, *argument0);
+    *argument1 = argument_validation1(line, *command, *argument0);
     if (RETRY_ARGUMENT == *argument0)
       warning("invalid second argument");
   }
@@ -315,12 +297,12 @@ ssize_t send_tcp(const unsigned char command,
                  const unsigned short argument0,
                  const unsigned short argument1)
 {
-  ssize_t bytes = write_all(sd_tcp, command,
+  ssize_t bytes = write_all(sd_tcp, &command,
                             sizeof(command));
-  bytes += write_all(sd_tcp, argument0,
+  bytes += write_all(sd_tcp, &argument0,
                      sizeof(argument0));
   bytes += write_all(sd_tcp,
-                     (unsigned char)argument1,
+                     (unsigned char *)&argument1,
                      sizeof(unsigned char));
 
   if (errno || bytes < 1)
@@ -339,9 +321,7 @@ ssize_t send_command(const unsigned char command,
                      const unsigned short argument1)
 {
   // tcp communication if the client sends data
-  if (TCP_CODE_R == command)
-    return send_tcp(command, argument0, argument1);
-  if (TCP_CODE_Q == command)
+  if (TCP_CODE_R == command || TCP_CODE_Q == command)
     return send_tcp(command, argument0, argument1);
 
   // udp communication for queries
