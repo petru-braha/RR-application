@@ -42,6 +42,7 @@ void routes(struct rr_route *data,
             schedule[i].location_arrival == *l_a)
             data[index_route++] = schedule[i];
 
+    set_last(&data[index_route]);
     *count = index_route;
 }
 
@@ -73,6 +74,7 @@ void departures(struct rr_route *data,
         if (schedule[i].time_departure == next_hour)
             data[index_route++] = schedule[i];
 
+    set_last(&data[index_route]);
     *count = index_route;
 }
 
@@ -105,6 +107,7 @@ void arrivals(struct rr_route *data,
         if (schedule[i].time_arrival == next_hour)
             data[index_route++] = schedule[i];
 
+    set_last(&data[index_route]);
     *count = index_route;
 }
 

@@ -14,7 +14,7 @@
 // constants:
 
 const int NO_FLAG = 0;
-#define BYTES_COMMAND_MAX 20
+#define BYTES_COMMAND_MAX 40
 #define BYTES_OUTCOME_MAX 100
 #define BYTES_PATH_MAX 50
 

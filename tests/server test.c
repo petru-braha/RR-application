@@ -24,7 +24,7 @@
 #include "../include/server_api.h"
 
 //------------------------------------------------
-//! global variables
+// global variables
 
 const uint16_t port = 2970;
 
@@ -59,49 +59,13 @@ bool running_condition()
     return '1' == key;
 }
 
-// main thread
+// 3 threads
+void *udp_communication(void *);
 void *multiplexing(void *);
-
-// main thread
-void *udp_communication(void *)
-{
-    char command[BYTES_COMMAND_MAX];
-    struct sockaddr_in skaddr_client;
-    socklen_t length = sizeof(skaddr_client);
-
-    for (; running_condition();)
-    {
-        int bytes =
-            recvfrom(sd_udp, command,
-                     BYTES_COMMAND_MAX, NO_FLAG,
-                     (struct sockaddr *)&skaddr_client,
-                     &length);
-
-        if (-1 == bytes)
-        {
-            if (EWOULDBLOCK == errno)
-            {
-                errno = 0;
-                continue;
-            }
-            else
-                call_var(-1);
-        }
-
-        char outcome[BYTES_OUTCOME_MAX];
-        parse_command(command, outcome);
-
-        sendto(sd_udp, outcome,
-               BYTES_OUTCOME_MAX,
-               NO_FLAG,
-               (struct sockaddr *)&skaddr_client,
-               length);
-    }
-}
+int main(int argc, char *argv[]);
 
 //------------------------------------------------
 // gcc server\ test.c -I/usr/include/libxml2 -lxml2 -o sv
-// main thread; in total being: three main threads
 int main(int argc, char *argv[])
 {
     if (argc > 2)
@@ -187,6 +151,7 @@ int main(int argc, char *argv[])
         if (0 == tm.tm_hour && 0 == tm.tm_min)
         {
             // close threads
+            // todo their running condition should return false
             call0(pthread_join(multiplexing_thread, NULL));
             call0(pthread_join(udp_thread, NULL));
             for (int fd = 0; fd < descriptors.count; fd++)
@@ -237,18 +202,62 @@ int main(int argc, char *argv[])
     return EXIT_SUCCESS;
 }
 
-//------------------------------------------------
-//! other
+// receives three bytes sends two bytes at minimum
+void *udp_communication(void *)
+{
+    unsigned char buffer[3];
+    struct sockaddr_in skaddr_client;
+    socklen_t length = sizeof(skaddr_client);
 
+    for (; running_condition();)
+    {
+        int bytes =
+            recvfrom(sd_udp, buffer,
+                     3 * sizeof(char), NO_FLAG,
+                     (struct sockaddr *)&skaddr_client,
+                     &length);
+
+        if (-1 == bytes)
+        {
+            if (EWOULDBLOCK == errno)
+            {
+                errno = 0;
+                continue;
+            }
+            else
+                call_var(-1);
+        }
+
+        struct rr_route data[COUNT_ROUTES_MAX];
+        unsigned short count = 0;
+        parse(buffer[0], (unsigned short *)&buffer[1],
+              (unsigned short *)&buffer[2],
+              data, &count);
+
+        sendto(sd_udp, &count, sizeof(count), NO_FLAG,
+               (struct sockaddr *)&skaddr_client,
+               length);
+
+        sendto(sd_udp, data,
+               count * sizeof(struct rr_route),
+               NO_FLAG,
+               (struct sockaddr *)&skaddr_client,
+               length);
+    }
+}
+
+// receives four bytes, sends one byte
 void *tcp_communication(int sd)
 {
     if (!FD_ISSET(sd, &descriptors.container))
         return NULL;
 
-    char command[BYTES_COMMAND_MAX];
-    ssize_t bytes = read_all(sd, command, BYTES_COMMAND_MAX);
-
-    if (errno || bytes < 1)
+    unsigned char command = 0, argument1 = 0;
+    unsigned short argument0 = 0;
+    ssize_t bytes = read_all(sd, &command, sizeof(command));
+    bytes += read_all(sd, &argument0, sizeof(argument0));
+    bytes += read_all(sd, &argument1, sizeof(argument1));
+    if (errno || bytes != 4)
     {
         warning("client disconnected while receving command");
         if (ECONNRESET != errno && errno)
@@ -260,12 +269,10 @@ void *tcp_communication(int sd)
         return NULL;
     }
 
-    char outcome[BYTES_OUTCOME_MAX];
-    parse_command(command, outcome);
-
-    bytes = write_all(sd, outcome, BYTES_OUTCOME_MAX);
-
-    if (errno || bytes < 1)
+    unsigned char outcome = 0;
+    parse(command, argument0, argument1, NULL, &outcome);
+    bytes = write_all(sd, outcome, sizeof(outcome));
+    if (errno || bytes != sizeof(outcome))
     {
         warning("client disconnected while sending outcome");
         if (ECONNRESET != errno && errno)
