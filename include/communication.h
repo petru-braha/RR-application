@@ -6,7 +6,8 @@
 #include <string.h>
 #include <errno.h>
 
-ssize_t read_all(const int fd, char *buffer, const size_t count_bytes)
+ssize_t read_all(const int fd, void *const buffer,
+                 const size_t count_bytes)
 {
     if (0 == count_bytes || NULL == buffer)
         return -1;
@@ -14,8 +15,8 @@ ssize_t read_all(const int fd, char *buffer, const size_t count_bytes)
     ssize_t bytes = 0;
     while (bytes != count_bytes)
     {
-        ssize_t b = read(fd, buffer + bytes, count_bytes);
-
+        ssize_t b =
+            read(fd, buffer + bytes, count_bytes);
         if (-1 == b && EWOULDBLOCK == errno)
         {
             errno = 0;
@@ -31,7 +32,8 @@ ssize_t read_all(const int fd, char *buffer, const size_t count_bytes)
     return bytes;
 }
 
-ssize_t write_all(const int fd, const char *buffer, const size_t count_bytes)
+ssize_t write_all(const int fd, const void *buffer,
+                  const size_t count_bytes)
 {
     if (0 == count_bytes || NULL == buffer)
         return -1;
@@ -39,8 +41,8 @@ ssize_t write_all(const int fd, const char *buffer, const size_t count_bytes)
     ssize_t bytes = 0;
     while (bytes != count_bytes)
     {
-        ssize_t b = write(fd, buffer + bytes, count_bytes);
-
+        ssize_t b =
+            write(fd, buffer + bytes, count_bytes);
         if (-1 == b && EWOULDBLOCK == errno)
         {
             errno = 0;

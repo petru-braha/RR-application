@@ -67,7 +67,8 @@ int read_xml(const char *const path)
         if (0 == xmlStrcmp(route_node->name, (const xmlChar *)"text"))
             continue;
 
-        struct rr_route new_route;
+        unsigned short time = 0;
+        struct rr_route new_route = {0, 0, 0};
         xmlNodePtr data;
         xmlChar *pulled;
 
@@ -78,10 +79,10 @@ int read_xml(const char *const path)
         if (NULL == data)
             continue;
         pulled = xmlNodeListGetString(document, data->xmlChildrenNode, 1);
-        new_route.location_departure =
+        new_route.departure_data =
             (unsigned char)atoi((char *)pulled);
         xmlFree(pulled);
-        if (new_route.location_departure >= COUNT_LOCATION) // error
+        if (new_route.departure_data >= COUNT_LOCATION) // error
             continue;
 
         // location
@@ -91,10 +92,15 @@ int read_xml(const char *const path)
         if (NULL == data)
             continue;
         pulled = xmlNodeListGetString(document, data->xmlChildrenNode, 1);
-        new_route.location_arrival =
+        new_route.arrival_data =
             (unsigned char)atoi((char *)pulled);
         xmlFree(pulled);
-        if (new_route.location_arrival >= COUNT_LOCATION) // error
+        if (new_route.arrival_data >= COUNT_LOCATION) // error
+            continue;
+
+        // extra check
+        if (new_route.departure_data ==
+            new_route.arrival_data)
             continue;
 
         // time
@@ -104,11 +110,11 @@ int read_xml(const char *const path)
         if (NULL == data)
             continue;
         pulled = xmlNodeListGetString(document, data->xmlChildrenNode, 1);
-        new_route.time_departure =
-            (unsigned short)atoi((char *)pulled);
+        time = (unsigned short)atoi((char *)pulled);
         xmlFree(pulled);
-        if (new_route.time_departure >= TIME_MAX) // error
+        if (time >= TIME_MAX) // error
             continue;
+        new_route.departure_data += COUNT_LOCATION * time;
 
         // time
         data = data->next;
@@ -117,15 +123,13 @@ int read_xml(const char *const path)
         if (NULL == data)
             continue;
         pulled = xmlNodeListGetString(document, data->xmlChildrenNode, 1);
-        new_route.time_arrival =
-            (unsigned short)atoi((char *)pulled);
+        time = (unsigned short)atoi((char *)pulled);
         xmlFree(pulled);
-        if (new_route.time_arrival >= TIME_MAX) // error
+        if (time >= TIME_MAX) // error
             continue;
+        new_route.arrival_data += COUNT_LOCATION * time;
 
-        if (new_route.location_departure ==
-            new_route.location_arrival)
-            continue;
+        // success
         schedule[index_route++] = new_route;
     }
 

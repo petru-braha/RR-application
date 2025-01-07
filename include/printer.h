@@ -115,24 +115,25 @@ void client_print(struct rr_route r,
   // store how many minute it was late
   // todo check for flags and print and delete/store
   char d[BYTES_COMMAND_MAX], a[BYTES_COMMAND_MAX];
-  codetostring(d, r.location_departure, path);
-  codetostring(a, r.location_arrival, path);
+  codetostring(d, get_location(r.departure_data), path);
+  codetostring(a, get_location(r.arrival_data), path);
 
-  printf("%s(%02d:%02d) -> ",
-         d, r.time_departure / 60,
-         r.time_departure % 60);
-  printf("%s(%02d:%02d)\n",
-         a, r.time_arrival / 60,
-         r.time_arrival % 60);
+  unsigned short d_time = get_time(r.departure_data),
+                 a_time = get_time(r.arrival_data);
+
+  printf("%s(%02d:%02d) -> ", d,
+         d_time / 60, d_time % 60);
+  printf("%s(%02d:%02d)\n", a,
+         a_time / 60, a_time % 60);
 }
 
 void server_print(struct rr_route r)
 {
   printf("%d %d %d %d\n",
-         (int)r.location_departure,
-         (int)r.location_arrival,
-         (int)r.time_departure,
-         (int)r.time_arrival);
+         get_location(r.departure_data),
+         get_location(r.arrival_data),
+         get_time(r.departure_data),
+         get_time(r.arrival_data));
 }
 
 #endif

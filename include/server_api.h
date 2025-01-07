@@ -3,14 +3,7 @@
 
 #include <time.h>
 #include <stdbool.h>
-#include "error.h"
-#include "route.h"
-
-#define UDP_ROUTES 250
-#define UDP_DEPARTURES 251
-#define UDP_ARRIVALS 252
-#define TCP_REPORT 5
-#define TCP_QUIT 6
+#include "shared.h"
 
 extern struct rr_route schedule[COUNT_ROUTES_MAX];
 extern unsigned short count_routes;
@@ -38,9 +31,14 @@ void routes(struct rr_route *data,
 
     unsigned short index_route = 0;
     for (unsigned short i = 0; i < count_routes; i++)
-        if (schedule[i].location_departure == *l_d &&
-            schedule[i].location_arrival == *l_a)
+    {
+        if (get_location(schedule[i].departure_data) !=
+            (unsigned char)*l_d)
+            break;
+        if (get_location(schedule[i].arrival_data) ==
+            (unsigned char)*l_a)
             data[index_route++] = schedule[i];
+    }
 
     set_last(&data[index_route]);
     *count = index_route;
@@ -67,11 +65,13 @@ void departures(struct rr_route *data,
 
     time_t t = time(NULL);
     struct tm tm = *localtime(&t);
-    unsigned short next_hour = (tm.tm_hour + 1) * 60 + tm.tm_min;
+    unsigned short next_hour =
+        (tm.tm_hour + 1) * 60 + tm.tm_min;
 
     unsigned short index_route = 0;
     for (unsigned short i = 0; i < count_routes; i++)
-        if (schedule[i].time_departure == next_hour)
+        if (get_time(schedule[i].departure_data) ==
+            next_hour)
             data[index_route++] = schedule[i];
 
     set_last(&data[index_route]);
@@ -100,11 +100,13 @@ void arrivals(struct rr_route *data,
 
     time_t t = time(NULL);
     struct tm tm = *localtime(&t);
-    unsigned short next_hour = (tm.tm_hour + 1) * 60 + tm.tm_min;
+    unsigned short next_hour =
+        (tm.tm_hour + 1) * 60 + tm.tm_min;
 
     unsigned short index_route = 0;
     for (unsigned short i = 0; i < count_routes; i++)
-        if (schedule[i].time_arrival == next_hour)
+        if (get_time(schedule[i].arrival_data) ==
+            next_hour)
             data[index_route++] = schedule[i];
 
     set_last(&data[index_route]);
@@ -121,13 +123,20 @@ void report(unsigned short *const flag,
         return;
     }
 
-    if (*id_train >= count_routes || *minutes >= UCHAR_MAX)
+    if (*id_train >= count_routes || *minutes >= DELEY_MAX)
     {
         *flag = 0;
         return;
     }
 
-    schedule[*id_train].time_arrival += *minutes;
+    unsigned char *data = &schedule[*id_train].delay_data;
+    if (*data >= DELEY_MAX)
+        return;
+    unsigned short temp = (unsigned short)*data;
+    if (temp += *minutes >= DELEY_MAX)
+        *data = DELEY_MAX;
+    else
+        schedule[*id_train].delay_data += *minutes;
 }
 
 //------------------------------------------------
@@ -169,13 +178,13 @@ void parse(const unsigned char command,
     // UDP command
     switch (command)
     {
-    case UDP_ROUTES:
+    case UDP_CODE_R:
         routes(data, count, argument0, argument1);
         return;
-    case UDP_DEPARTURES:
+    case UDP_CODE_D:
         departures(data, count, argument0);
         return;
-    case UDP_ARRIVALS:
+    case UDP_CODE_A:
         arrivals(data, count, argument1);
         return;
 
@@ -186,7 +195,7 @@ void parse(const unsigned char command,
         return;
     }
 
-    if (TCP_REPORT == command)
+    if (TCP_CODE_R == command)
     {
         report(count, argument0, argument1);
         return;

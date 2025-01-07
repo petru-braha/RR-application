@@ -14,18 +14,28 @@
 
 #define TIME_MIN 0
 #define TIME_MAX 1441
+#define DELEY_MAX 180
 
 // no need to store if departed/arrived
 // it can be deduced by the local time
 // no need to store if late/fail
 // it can be deduced by late minutes
 
+unsigned char get_location(const unsigned short data)
+{
+    return data % COUNT_LOCATION;
+}
+
+unsigned short get_time(const unsigned short data)
+{
+    return data / COUNT_LOCATION;
+}
+
 struct rr_route
 {
-    unsigned char location_departure;
-    unsigned char location_arrival;
-    unsigned short time_departure;
-    unsigned short time_arrival;
+    unsigned short departure_data;
+    unsigned short arrival_data;
+    unsigned char delay_data;
 };
 
 void set_last(struct rr_route *r)
@@ -33,18 +43,16 @@ void set_last(struct rr_route *r)
     if (NULL == r)
         warning("set_last() failed - null pointer");
 
-    r->location_departure = UCHAR_MAX;
-    r->location_arrival = UCHAR_MAX;
-    r->time_departure = USHRT_MAX;
-    r->time_arrival = USHRT_MAX;
+    r->departure_data = USHRT_MAX;
+    r->arrival_data = USHRT_MAX;
+    r->delay_data = UCHAR_MAX;
 }
 
-bool is_last_route(struct rr_route r)
+bool is_last_route(const struct rr_route r)
 {
-    if (UCHAR_MAX == r.location_departure &&
-        UCHAR_MAX == r.location_arrival &&
-        USHRT_MAX == r.time_departure &&
-        USHRT_MAX == r.time_arrival)
+    if (USHRT_MAX == r.departure_data &&
+        USHRT_MAX == r.arrival_data &&
+        UCHAR_MAX == r.delay_data)
         return true;
     return false;
 }

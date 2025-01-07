@@ -1,13 +1,6 @@
 ### objectives: order of implementation
 
-0. status - change to loation * time and add extra field for late
-
-- approximate
-- change to loation * time and add extra field for late
-- change to loation * server store late - bad : no flag
-
-0. test maintenance time
-0. test entire application
+0. test cases
 
 0. conc_serv
 0. login logout and register
@@ -41,6 +34,10 @@
 - status will be encoded in departure location in the following way
 - 57600 - 1440 * 41
 - (57600, 65536)
+
+- approximate
+- change to location * time and add extra field for late
+- change to location * server store late - bad : no flag
 
 ### command encoding 
 

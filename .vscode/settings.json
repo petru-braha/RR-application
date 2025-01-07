@@ -74,7 +74,8 @@
     "server_api.h": "c",
     "tcp_communication.h": "c",
     "route.h": "c",
-    "error.h": "c"
+    "error.h": "c",
+    "communication.h": "c"
   },
   "C_Cpp_Runner.cCompilerPath": "gcc",
   "C_Cpp_Runner.cppCompilerPath": "g++",
