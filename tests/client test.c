@@ -25,6 +25,9 @@
 
 //------------------------------------------------
 
+const char *const path_location =
+    "../include/data/location.txt";
+
 #define RETRY_COMMAND 0                 // invalid commands
 #define RETRY_ARGUMENT COUNT_ROUTES_MAX // invalid argument
 #define RECV_FAIL 0
@@ -108,58 +111,91 @@ int main(int argc, char *argv[])
 //------------------------------------------------
 //! protocol parsing methods
 
-// DOES NOT provides error messages
-unsigned char command_validation(char *buffer)
+/* to be applied only for:
+ * the command and first argument
+ * DOES NOT provides error messages
+ */
+static bool consume_input(char **const buffer,
+                          const unsigned char size)
 {
-  // + 1 skips the ' ' character
+  *buffer += size;
+  if ('\0' == (*buffer)[0])
+    return false;
+  (*buffer)++;
+  return true;
+}
+
+/* returns how should the pointer change
+ * DOES NOT provides error messages
+ */
+static unsigned char
+command_validation(const char *const buffer,
+                   unsigned char *const command)
+{
   if (buffer == strstr(buffer, UDP_STRING_R))
   {
-    strcpy(buffer, buffer + LEN_ROUTES + 1);
-    return UDP_CODE_R;
+    *command = UDP_CODE_R;
+    return LEN_ROUTES;
   }
 
   if (buffer == strstr(buffer, UDP_STRING_D))
   {
-    strcpy(buffer, buffer + LEN_DEPARTURES + 1);
-    return UDP_CODE_D;
+    *command = UDP_CODE_D;
+    return LEN_DEPARTURES;
   }
 
   if (buffer == strstr(buffer, UDP_STRING_A))
   {
-    strcpy(buffer, buffer + LEN_ARRIVALS + 1);
-    return UDP_CODE_A;
+    *command = UDP_CODE_A;
+    return LEN_ARRIVALS;
   }
 
   if (buffer == strstr(buffer, TCP_STRING_R))
   {
-    strcpy(buffer, buffer + LEN_REPORT + 1);
-    return TCP_CODE_R;
+    *command = TCP_CODE_R;
+    return LEN_REPORT;
   }
 
   if (buffer == strstr(buffer, TCP_STRING_Q))
   {
-    strcpy(buffer, buffer + LEN_QUIT + 1);
-    return TCP_CODE_Q;
+    *command = TCP_CODE_Q;
+    return LEN_QUIT;
   }
 
-  return RETRY_COMMAND;
+  *command = RETRY_COMMAND;
+  return 0;
 }
 
-// DOES NOT provides error messages
-unsigned short argument_validation0( char *buffer,
-                                    const unsigned char command)
+/* returns how should the pointer change
+ * DOES NOT provides error messages
+ */
+static unsigned char
+argument_validation0(const char *const buffer,
+                     const unsigned char command,
+                     unsigned short *const argument0)
 {
+  *argument0 = RETRY_ARGUMENT;
+  if (NULL == buffer)
+  {
+    warning("received null buffer");
+    return 0;
+  }
+
   if (RETRY_COMMAND == command)
-    return RETRY_ARGUMENT;
+    return 0;
 
   if (command >= UDP_CODE_R)
   {
-    unsigned short location_code = 0;
-    stringtocode(buffer, &location_code,
-                 "../include/data/location.txt");
+    unsigned short location_code = RETRY_ARGUMENT;
+    unsigned short bytes =
+        stringtocode(buffer, &location_code,
+                     path_location);
     if (COUNT_LOCATION == location_code)
-      return RETRY_ARGUMENT;
-    return location_code;
+      return 0;
+
+    // success
+    *argument0 = location_code;
+    return bytes;
   }
 
   if (TCP_CODE_R == command)
@@ -171,48 +207,64 @@ unsigned short argument_validation0( char *buffer,
     if (' ' != *condition)
     {
       warning("strtoul() failed");
-      return RETRY_ARGUMENT;
+      return 0;
     }
 
-    return number;
+    // success
+    *argument0 = number;
+    return condition - buffer;
   }
 
   if (TCP_CODE_Q == command)
   {
-    if (buffer[4] != '\0')
-    {
+    if ('\0' != buffer[4])
       warning("quit does not take arguments");
-      return RETRY_ARGUMENT;
-    }
-
-    return TCP_CODE_Q;
+    else // success
+      *argument0 = TCP_CODE_Q;
+    return 0;
   }
 
-  return RETRY_ARGUMENT;
+  // failure
+  return 0;
 }
 
-// DOES NOT provides error messages
-unsigned short argument_validation1( char *buffer,
-                                    const unsigned char command,
-                                    const unsigned short previous_argument)
+/* returns how should the pointer change
+ * DOES NOT provides error messages
+ */
+static unsigned char
+argument_validation1(const char *const buffer,
+                     const unsigned char command,
+                     const unsigned short argument0,
+                     unsigned short *const argument1)
 {
-  if (RETRY_ARGUMENT == previous_argument)
-    return RETRY_ARGUMENT;
+  *argument1 = RETRY_ARGUMENT;
+  if (NULL == buffer)
+  {
+    warning("received null buffer");
+    return 0;
+  }
+
+  if (RETRY_COMMAND == command ||
+      RETRY_ARGUMENT == argument0)
+    return 0;
 
   if (command >= UDP_CODE_R)
   {
-    unsigned short location_code = 0;
-    stringtocode(buffer, &location_code,
-                 "../include/data/location.txt");
+    unsigned short location_code = RETRY_ARGUMENT;
+    unsigned short bytes =
+        stringtocode(buffer, &location_code,
+                     path_location);
     if (COUNT_LOCATION == location_code)
-      return RETRY_ARGUMENT;
-    if (location_code == previous_argument)
+      return 0;
+
+    if (location_code == argument0)
     {
       warning("there are no trains with no use");
-      return RETRY_ARGUMENT;
+      return 0;
     }
 
-    return location_code;
+    *argument1 = location_code; // success
+    return bytes;
   }
 
   if (TCP_CODE_R == command)
@@ -224,68 +276,89 @@ unsigned short argument_validation1( char *buffer,
     if ('\0' != *condition)
     {
       warning("strtoul() failed");
-      return RETRY_ARGUMENT;
+      return 0;
     }
 
-    return number;
+    *argument1 = number; // success
+    return condition - buffer;
   }
 
   if (TCP_CODE_Q == command)
   {
-    if (buffer[4] != '\0')
-    {
-      warning("quit does not take arguments");
-      return RETRY_ARGUMENT;
-    }
-
-    return TCP_CODE_Q;
+    if ('\0' != buffer[4])
+      warning("quit() does not take arguments");
+    else // success
+      *argument1 = TCP_CODE_Q;
+    return 0;
   }
 
-  return RETRY_ARGUMENT;
+  // failure
+  return 0;
 }
 
 /* each command has at most two arguments
  * provides error messages
  */
-static ssize_t recv_command(unsigned char *const command,
-                            unsigned short *const argument0,
-                            unsigned short *const argument1)
+static ssize_t
+recv_command(unsigned char *const command,
+             unsigned short *const argument0,
+             unsigned short *const argument1)
 {
+  ssize_t bytes = 0;
+  char *const line = malloc(BYTES_COMMAND_MAX);
   *command = RETRY_COMMAND;
 
-  ssize_t bytes = 0;
-  char line[BYTES_COMMAND_MAX];
-  for (; RETRY_COMMAND == *command ||
-         COUNT_ROUTES_MAX == *argument0 ||
-         COUNT_ROUTES_MAX == *argument1;)
+  for (*command = RETRY_COMMAND,
+      *argument0 = RETRY_ARGUMENT,
+      *argument1 = RETRY_ARGUMENT;
+
+       RETRY_COMMAND == *command ||
+       RETRY_ARGUMENT == *argument0 ||
+       RETRY_ARGUMENT == *argument1;)
   {
-    bytes = read_all(STDIN_FILENO, line, sizeof(line));
-    if (BYTES_COMMAND_MAX != bytes)
+    explicit_bzero(line, BYTES_COMMAND_MAX);
+    char *buffer = line;
+    bytes = read(STDIN_FILENO, line, BYTES_COMMAND_MAX);
+    repair(line);
+    if (false ==
+        consume_input(&buffer,
+                      command_validation(buffer,
+                                         command)))
     {
-      error("read_all() failed - standard input");
+      warning("this command takes two arguments");
       continue;
     }
-
-    repair(line);
-    *command = command_validation(line);
     if (RETRY_COMMAND == *command)
     {
       warning("invalid command");
       continue;
     }
 
-    *argument0 = argument_validation0(line, *command);
+    if (false ==
+        consume_input(&buffer,
+                      argument_validation0(buffer,
+                                           *command,
+                                           argument0)))
+    {
+      warning("this command takes two arguments");
+      continue;
+    }
     if (RETRY_ARGUMENT == *argument0)
     {
       warning("invalid first argument");
       continue;
     }
 
-    *argument1 = argument_validation1(line, *command, *argument0);
-    if (RETRY_ARGUMENT == *argument0)
+    // here we don't cosume, aviod warning
+    buffer += argument_validation1(buffer,
+                                   *command,
+                                   *argument0,
+                                   argument1);
+    if (RETRY_ARGUMENT == *argument1 || '\0' != buffer[0])
       warning("invalid second argument");
   }
 
+  free(line);
   return bytes;
 }
 
@@ -324,7 +397,8 @@ ssize_t send_command(const unsigned char command,
   if (TCP_CODE_R == command || TCP_CODE_Q == command)
     return send_tcp(command, argument0, argument1);
 
-  // udp communication for queries
+  // udp communication if queries
+  // sends three bytes
   unsigned char a0 = (unsigned char)argument0,
                 a1 = (unsigned char)argument1;
   unsigned char string[3] = {command, a0, a1};
@@ -411,6 +485,6 @@ static ssize_t print_data(const unsigned char command,
   // UDP commands
   printf("%d routes received:\n", argument0);
   for (unsigned short i = 0; i < argument0; i++)
-    client_print(data[i], "../include/data/location.txt");
+    client_print(data[i], path_location);
   return argument0 * sizeof(struct rr_route);
 }

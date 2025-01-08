@@ -197,6 +197,9 @@ void parse(const unsigned char command,
 
     if (TCP_CODE_R == command)
     {
+        // it is expected: NULL == data
+        if(data)
+            warning("tcp command treated as query");
         report(count, argument0, argument1);
         return;
     }

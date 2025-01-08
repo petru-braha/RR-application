@@ -23,6 +23,15 @@
 #include "../include/server_xml.h"
 #include "../include/server_api.h"
 
+const char *const path_thread =
+    "../include/dev/key.txt";
+const char *const path_binary =
+    "../include/dev/write_xml";
+const char *const name_random =
+    "random schedule.xml";
+const char *const path_to_build =
+    "../include/data/";
+
 typedef struct
 {
     fd_set container;
@@ -35,18 +44,12 @@ int sd_udp = -1;
 
 //------------------------------------------------
 
-// a server should always be online
-bool running_condition()
-{
-    int fd = open("../include/dev/key.txt", O_RDONLY);
-    call_var(fd);
-
-    char key = '0';
-    call(read(fd, &key, 1));
-    call(close(fd));
-
-    return '1' == key;
-}
+void check_xml(int *argc, char *argv[],
+               char *const path_xml);
+bool running_condition();
+void maintenance(pthread_t *th0, pthread_t *th1,
+                 const int argc,
+                 const char *const path_xml);
 
 // 3 threads
 void *udp_communication(void *);
@@ -57,40 +60,11 @@ int main(int argc, char *argv[]);
 // gcc server\ test.c -I/usr/include/libxml2 -lxml2 -o sv
 int main(int argc, char *argv[])
 {
-    if (argc > 2)
-    {
-        error("please provide at most one xml file path.\n");
-        exit(EXIT_FAILURE);
-    }
+    char path_xml[BYTES_PATH_MAX];
+    strcpy(path_xml, path_to_build);
 
-    char path_xml[BYTES_PATH_MAX] = "../include/data/";
-    if (1 == argc)
-    {
-        strcat(path_xml, "random schedule.xml");
-        write_xml("../include/dev/write_xml");
-    }
-    else
-    {
-        char path_tmp[BYTES_PATH_MAX];
-        strcpy(path_tmp, path_xml);
-        strcat(path_tmp, argv[1]);
-        if (0 == test_xml(path_tmp))
-            strcat(path_xml, argv[1]);
-        else
-        {
-            argc = 1; // later generations
-            strcat(path_xml, "random schedule.xml");
-            write_xml("../include/dev/write_xml");
-        }
-    }
-
+    check_xml(&argc, argv, path_xml);
     read_xml(path_xml);
-
-    printf("%d routes count\n", count_routes);
-    for (unsigned short i = 0; i < count_routes; i++)
-        server_print(schedule[i]);
-
-    return 0;
 
     // server address
     const uint16_t port = 2970;
@@ -137,31 +111,21 @@ int main(int argc, char *argv[])
                          &udp_communication, NULL));
 
     call(printf("the server is online.\n\n"));
+    bool maintenance_flag = true;
     for (; running_condition();)
     {
         // maintenance time
         time_t t = time(NULL);
         struct tm tm = *localtime(&t);
-        if (0 == tm.tm_hour && 0 == tm.tm_min)
+        if (0 == tm.tm_hour && 0 == tm.tm_min &&
+            maintenance_flag)
         {
-            // close threads
-            // todo their running condition should return false
-            call0(pthread_join(multiplexing_thread, NULL));
-            call0(pthread_join(udp_thread, NULL));
-            for (int fd = 0; fd < descriptors.count; fd++)
-                if (FD_ISSET(fd, &descriptors.container))
-                    call(printf("warning: %d is not closed.\n", fd));
-
-            if (1 == argc)
-                write_xml("../include/dev/write_xml");
-            read_xml(path_xml);
-
-            // restart threads
-            call0(pthread_create(&multiplexing_thread, NULL,
-                                 &multiplexing, NULL));
-            call0(pthread_create(&udp_thread, NULL,
-                                 &udp_communication, NULL));
+            maintenance(&multiplexing_thread,
+                        &udp_thread, argc, path_xml);
+            maintenance_flag = false;
         }
+        else
+            maintenance_flag = true;
 
         // error check
         if (0 != errno)
@@ -265,8 +229,11 @@ void *tcp_communication(int sd)
     }
 
     unsigned char outcome = 0;
-    parse(command, argument0, argument1, NULL, &outcome);
-    bytes = write_all(sd, outcome, sizeof(outcome));
+    parse(command, &argument0,
+          (unsigned short *)&argument1, NULL,
+          (unsigned short *)&outcome);
+
+    bytes = write_all(sd, &outcome, sizeof(outcome));
     if (errno || bytes != sizeof(outcome))
     {
         warning("client disconnected while sending outcome");
@@ -279,7 +246,7 @@ void *tcp_communication(int sd)
         return NULL;
     }
 
-    if (0 == strcmp(command, "quit"))
+    if (TCP_CODE_Q == command)
     {
         FD_CLR(sd, &descriptors.container);
         call(close(sd));
@@ -314,4 +281,93 @@ void *multiplexing(void *)
     }
 
     return NULL;
+}
+
+//------------------------------------------------
+
+void check_xml(int *argc, char *argv[],
+               char *const path_xml)
+{
+    if (*argc > 2)
+    {
+        error("at most one xml file name is expected.\n");
+        exit(EXIT_FAILURE);
+    }
+
+    if (1 == *argc)
+    {
+        strcat(path_xml, name_random);
+        write_xml(path_binary);
+        return;
+    }
+
+    // 2 == argc
+    char path_tmp[BYTES_PATH_MAX];
+    strcpy(path_tmp, path_xml);
+    strcat(path_tmp, argv[1]);
+    if (0 == test_xml(path_tmp))
+    {
+        strcat(path_xml, argv[1]);
+        return;
+    }
+
+    // random generation
+    *argc = 1; // later generations
+    strcat(path_xml, name_random);
+    write_xml(path_binary);
+}
+
+// a server should always be online
+bool running_condition()
+{
+    int fd = open(path_thread, O_RDONLY);
+    call_var(fd);
+
+    char key = '0';
+    call(read(fd, &key, 1));
+    call(close(fd));
+
+    return '1' == key;
+}
+
+void maintenance(pthread_t *th0, pthread_t *th1,
+                 const int argc,
+                 const char *const path_xml)
+{
+    if (NULL == th0 || NULL == th1 || NULL == path_xml)
+    {
+        warning("maintenance() failed - received null");
+        return;
+    }
+
+    // stop serving clients
+    int fd = open(path_thread, O_WRONLY);
+    call_var(fd);
+    char key = '0'; // security--
+    call(write(fd, &key, sizeof(key)));
+    call(close(fd));
+
+    call0(pthread_join(*th0, NULL));
+    call0(pthread_join(*th1, NULL));
+    for (int fd = 0; fd < descriptors.count; fd++)
+        if (FD_ISSET(fd, &descriptors.container))
+            call(printf("warning: %d is not closed.\n", fd));
+
+    // check the new schedule for today
+    if (1 == argc)
+        write_xml(path_binary);
+    read_xml(path_xml);
+
+    // restart threads
+    call0(pthread_create(th0, NULL,
+                         &multiplexing, NULL));
+    call0(pthread_create(th0, NULL,
+                         &udp_communication, NULL));
+
+    // restart serving clients
+    fd = open(path_thread, O_WRONLY);
+    call_var(fd);
+    key = '1'; // security--
+    call(write(fd, &key, sizeof(key)));
+    call(close(fd));
 }

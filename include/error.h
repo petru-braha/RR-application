@@ -3,8 +3,8 @@
 
 #include <stdio.h>
 
+#define warning(message) printf("warning: %s.\n", message)
 #define error(message) printf("line %d error: %s.\n", __LINE__, message)
-#define warning(message) printf("line %d warning: %s.\n", __LINE__, message)
 
 #define print_function_name(x) printf("\"%s\"", #x)
 

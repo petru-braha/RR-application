@@ -31,7 +31,7 @@ void repair(unsigned char *const buffer)
   }
 
   size_t index = strlen(buffer);
-  if (index)
+  if (index && '\n' == buffer[index - 1])
     buffer[index - 1] = '\0';
 }
 
@@ -71,7 +71,8 @@ void codetostring(unsigned char *const string,
   strcpy(string, location);
 }
 
-void stringtocode(const unsigned char *const string,
+// returns strlen(location)
+unsigned short stringtocode(const char *const string,
                   unsigned short *const code,
                   const char *const path)
 {
@@ -80,7 +81,7 @@ void stringtocode(const unsigned char *const string,
   if (NULL == file)
   {
     error("stringtocode() failed - fopen()");
-    return;
+    return 0;
   }
 
   char location[BYTES_COMMAND_MAX];
@@ -93,15 +94,15 @@ void stringtocode(const unsigned char *const string,
     {
       error("stringtocode() failed - fgets()");
       fclose(file);
-      return;
+      return 0;
     }
 
     repair(location);
-    if (0 == strcmp(string, location))
+    if (string == strstr(string, location))
     {
       fclose(file);
       *code = index_location;
-      return;
+      return strlen(location);
     }
   }
 
