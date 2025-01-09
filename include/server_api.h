@@ -10,205 +10,157 @@ extern struct rr_route schedule[COUNT_ROUTES_MAX];
 extern unsigned short count_routes;
 
 // today
-void routes(struct rr_route *data,
-            unsigned short *const count,
-            const unsigned short *l_d,
-            const unsigned short *l_a)
+unsigned short routes(struct rr_route *const data,
+                      const unsigned char l_d,
+                      const unsigned char l_a)
 {
     if (NULL == data)
     {
         error("routes() received null data");
-        *count = 0;
-        return;
-    }
-
-    if (NULL == l_d || NULL == l_a)
-    {
-        warning("routes() received null arguments");
-        unsigned short location0 = 0, location1 = 1;
-        l_d = &location0;
-        l_a = &location1;
+        return RECV_FAIL;
     }
 
     unsigned short index_route = 0;
     for (unsigned short i = 0; i < count_routes; i++)
     {
-        if (get_location(schedule[i].departure_data) !=
-            (unsigned char)*l_d)
+        if (l_d != get_location(schedule[i].departure_data))
             break;
-        if (get_location(schedule[i].arrival_data) ==
-            (unsigned char)*l_a)
+        if (l_a == get_location(schedule[i].arrival_data))
             data[index_route++] = schedule[i];
     }
 
     set_last(&data[index_route]);
-    *count = index_route;
+    return index_route;
 }
 
 // in the next hour
-void departures(struct rr_route *data,
-                unsigned short *const count,
-                const unsigned short *l_d)
+unsigned short departures(struct rr_route *const data,
+                          const unsigned short l_d)
 {
     if (NULL == data)
-    {
-        error("departures() received null data");
-        *count = 0;
-        return;
-    }
-
-    if (NULL == l_d)
-    {
-        warning("departures() received null arguments");
-        unsigned short location0 = 0;
-        l_d = &location0;
-    }
+        return RECV_FAIL;
 
     time_t t = time(NULL);
     struct tm tm = *localtime(&t);
-    unsigned short next_hour =
-        (tm.tm_hour + 1) * 60 + tm.tm_min;
+    const unsigned short current_time =
+        (tm.tm_hour) * 60 + tm.tm_min;
 
     unsigned short index_route = 0;
     for (unsigned short i = 0; i < count_routes; i++)
-        if (get_time(schedule[i].departure_data) ==
-            next_hour)
+    {
+        if (l_d != get_location(schedule[i].departure_data))
+            continue;
+        if (current_time >
+            get_time(schedule[i].departure_data))
+            continue;
+        if (current_time + 60 >
+            get_time(schedule[i].departure_data))
             data[index_route++] = schedule[i];
+    }
 
     set_last(&data[index_route]);
-    *count = index_route;
+    return index_route;
 }
 
 // in the next hour
-void arrivals(struct rr_route *data,
-              unsigned short *const count,
-              const unsigned short *l_d)
-
+unsigned short arrivals(struct rr_route *const data,
+                        const unsigned short l_a)
 {
     if (NULL == data)
-    {
-        error("arrivals() received null data");
-        *count = 0;
-        return;
-    }
-
-    if (NULL == l_d)
-    {
-        warning("arrivals() received null arguments");
-        unsigned short location0 = 0;
-        l_d = &location0;
-    }
+        return RECV_FAIL;
 
     time_t t = time(NULL);
     struct tm tm = *localtime(&t);
-    unsigned short next_hour =
-        (tm.tm_hour + 1) * 60 + tm.tm_min;
+    const unsigned short current_time =
+        (tm.tm_hour) * 60 + tm.tm_min;
 
     unsigned short index_route = 0;
     for (unsigned short i = 0; i < count_routes; i++)
-        if (get_time(schedule[i].arrival_data) ==
-            next_hour)
+    {
+        if (l_a != get_location(schedule[i].arrival_data))
+            continue;
+        if (current_time >
+            get_time(schedule[i].arrival_data))
+            continue;
+        if (current_time + 60 >
+            get_time(schedule[i].arrival_data))
             data[index_route++] = schedule[i];
+    }
 
     set_last(&data[index_route]);
-    *count = index_route;
+    return index_route;
 }
 
-void report(unsigned short *const flag,
-            const unsigned short *const id_train,
-            const unsigned short *const minutes)
+unsigned char report(const unsigned short id_train,
+                     const unsigned char minutes)
 {
-    if (NULL == id_train || NULL == minutes)
-    {
-        *flag = 0;
-        return;
-    }
+    // invalid arguments
+    if (id_train >= count_routes || minutes >= DELEY_MAX)
+        return RECV_FAIL;
 
-    if (*id_train >= count_routes || *minutes >= DELEY_MAX)
-    {
-        *flag = 0;
-        return;
-    }
-
-    unsigned char *data = &schedule[*id_train].delay_data;
+    // already faulted
+    unsigned char *data = &schedule[id_train].delay_data;
     if (*data >= DELEY_MAX)
-        return;
+        return RECV_FAIL;
+
+    // can not report something that arrived already
+    time_t t = time(NULL);
+    struct tm tm = *localtime(&t);
+    if (tm.tm_hour * 60 + tm.tm_min >
+        get_time(schedule[id_train].arrival_data))
+        return RECV_FAIL;
+
+    // success
     unsigned short temp = (unsigned short)*data;
-    if (temp += *minutes >= DELEY_MAX)
+    if (temp + (unsigned short)minutes >= DELEY_MAX)
         *data = DELEY_MAX;
     else
-        schedule[*id_train].delay_data += *minutes;
+        schedule[id_train].delay_data += minutes;
+    return PTCP_SUCCESS;
 }
 
 //------------------------------------------------
 
-[[deprecated("parsing should be simple - just one byte")]]
-void parse_command(const char *command, char *outcome)
+unsigned char tcp_parse(const unsigned char command,
+                        const unsigned short argument0,
+                        const unsigned char argument1)
 {
-    if (0 == strcmp(command, "report") ||
-        0 == strcmp(command, "quit"))
-    {
-        strcat(strcpy(outcome, "TCP: "), command);
-        return;
-    }
-
-    strcpy(outcome, "UDP: ");
-    if (0 == strcmp(command, "routes") ||
-        0 == strcmp(command, "departures") ||
-        0 == strcmp(command, "arrivals"))
-    {
-        strcat(outcome, command);
-        return;
-    }
-
-    strcat(outcome, "invalid command");
+    if (TCP_CODE_R == command)
+        return report(argument0, argument1);
+    if (TCP_CODE_Q == command)
+        return PTCP_SUCCESS;
+    return RECV_FAIL;
 }
 
-void parse(const unsigned char command,
-           const unsigned short *argument0,
-           const unsigned short *argument1,
-           struct rr_route *const data,
-           unsigned short *const count)
+unsigned short udp_parse(const unsigned char command,
+                         const unsigned char argument0,
+                         const unsigned char argument1,
+                         struct rr_route *const data)
 {
-    if (NULL == count)
+    if (NULL == data)
     {
-        error("parse() failed - count is nullptr");
-        return;
+        warning("udp_parse() received null pointer");
+        return RECV_FAIL;
     }
 
-    // UDP command
     switch (command)
     {
     case UDP_CODE_R:
-        routes(data, count, argument0, argument1);
-        return;
+        return routes(data, argument0, argument1);
     case UDP_CODE_D:
-        departures(data, count, argument0);
-        return;
+        return departures(data, argument0);
     case UDP_CODE_A:
-        arrivals(data, count, argument1);
-        return;
+        return arrivals(data, argument1);
 
-    default:
-        // maybe udp
-        if (command >= 200)
-            routes(data, count, argument0, argument1);
-        return;
+    default: // maybe udp
+        if (command > TCP_CODE_Q)
+            return routes(data, argument0, argument1);
+        break;
     }
 
-    if (TCP_CODE_R == command)
-    {
-        // it is expected: NULL == data
-        if(data)
-            warning("tcp command treated as query");
-        report(count, argument0, argument1);
-        return;
-    }
-
-    // quit() is treated in tcp_communication()
     // invalid command
     set_last(&data[0]);
-    *count = 0;
+    return RECV_FAIL;
 }
 
 #endif

@@ -5,19 +5,4 @@
         <time_departure> 580 </time_departure>
         <time_arrival> 610 </time_arrival>
     </route>
-
-    <route>
-        <location_departure> 1 </location_departure>
-        <location_arrival> 34 </location_arrival>
-        <time_departure> 1112 </time_departure>
-        <time_arrival> 2 </time_arrival>
-    </route>
-
-    <route>
-        <location_departure> 2 </location_departure>
-        <location_arrival> 23 </location_arrival>
-        <time_departure> 222 </time_departure>
-        <time_arrival> 526 </time_arrival>
-    </route>
-
 </schedule>

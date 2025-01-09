@@ -1,4 +1,5 @@
-/* client.c - requests-sending application
+/* comments:
+ * client.c - requests-sending application
  * author - Braha Petru Bogdan - <petrubraha@gmail.com> (c)
  */
 
@@ -86,21 +87,18 @@ int main(int argc, char *argv[])
     return EXIT_FAILURE;
   }
 
-  call(printf("welcome, now you can send commands.\n\n"));
+  call(printf("welcome, you may type commands.\n\n"));
   unsigned char command = 0;
   unsigned short argument0 = 0, argument1 = 0;
   struct rr_route outcome[COUNT_ROUTES_MAX];
 
   // command loop
-  for (int condition = 1; condition;)
+  for (; TCP_CODE_Q != command;)
   {
     recv_command(&command, &argument0, &argument1);
     send_command(command, argument0, argument1);
     recv_outcome(command, &argument0, outcome);
-    printf("%d %d %d\n", command, argument0, argument1);
-    exit_client(0); // todo
     print_data(command, argument0, outcome);
-    condition = TCP_CODE_Q == command;
   }
 
   exit_client(EXIT_SUCCESS);
@@ -119,10 +117,6 @@ recv_command(unsigned char *const command,
              unsigned short *const argument0,
              unsigned short *const argument1)
 {
-  // todo
-  *command = *argument0 = *argument1 = TCP_CODE_Q;
-  return 0;
-
   ssize_t bytes = 0;
   char *const line = malloc(BYTES_COMMAND_MAX);
   *command = RETRY_COMMAND;
@@ -306,16 +300,16 @@ static ssize_t print_data(const unsigned char command,
     if (RECV_FAIL == argument0)
       printf("reporting failed.\n");
     else
-      printf("reporting was correctly performed.\n");
+      printf("reporting succeeded.\n");
     return sizeof(unsigned char);
   }
 
   if (TCP_CODE_Q == command)
   {
     if (RECV_FAIL == argument0)
-      printf("exiting failed to fetch with server.\n");
+      printf("quiting failed to fetch with server.\n");
     else
-      printf("exiting was correctly performed.\n");
+      printf("quiting succeeded.\n");
     return sizeof(unsigned char);
   }
 

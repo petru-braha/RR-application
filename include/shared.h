@@ -25,4 +25,7 @@
 #define TCP_CODE_R 5   // report command
 #define TCP_CODE_Q 6   // quit command
 
+#define PTCP_SUCCESS 1
+#define RECV_FAIL 0
+
 #endif

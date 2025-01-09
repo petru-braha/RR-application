@@ -1,5 +1,7 @@
-/* server.c - a concurrent server with i/o multiplexing, and two transport protocols
+/* comments:
+ * server.c - a concurrent server with i/o multiplexing, and two transport protocols
  * author - Braha Petru Bogdan - <petrubraha@gmail.com> (c)
+ * compilation command: gcc server\ test.c -I/usr/include/libxml2 -lxml2 -o sv
  */
 
 #include <unistd.h>
@@ -59,8 +61,6 @@ void *udp_communication(void *);
 void *multiplexing(void *);
 int main(int argc, char *argv[]);
 
-//------------------------------------------------
-// gcc server\ test.c -I/usr/include/libxml2 -lxml2 -o sv
 int main(int argc, char *argv[])
 {
     char path_xml[BYTES_PATH_MAX];
@@ -191,10 +191,9 @@ void *udp_communication(void *)
         }
 
         struct rr_route data[COUNT_ROUTES_MAX];
-        unsigned short count = 0;
-        parse(buffer[0], (unsigned short *)&buffer[1],
-              (unsigned short *)&buffer[2],
-              data, &count);
+        unsigned short count =
+            udp_parse(buffer[0], buffer[1],
+                      buffer[2], data);
 
         sendto(sd_udp, &count, sizeof(count), NO_FLAG,
                (struct sockaddr *)&skaddr_client,
@@ -209,7 +208,7 @@ void *udp_communication(void *)
 }
 
 // receives four bytes, sends one byte
-void *tcp_communication(int sd)
+void *tcp_communication(const int sd)
 {
     if (!FD_ISSET(sd, &descriptors.container))
         return NULL;
@@ -219,9 +218,6 @@ void *tcp_communication(int sd)
     ssize_t bytes = read_all(sd, &command, sizeof(command));
     bytes += read_all(sd, &argument0, sizeof(argument0));
     bytes += read_all(sd, &argument1, sizeof(argument1));
-
-    printf("%d %d %d\n", command, argument0, argument1);
-
     if (errno || bytes != 4)
     {
         warning("client disconnected while receving command");
@@ -234,11 +230,8 @@ void *tcp_communication(int sd)
         return NULL;
     }
 
-    unsigned char outcome = 0;
-    parse(command, &argument0,
-          (unsigned short *)&argument1, NULL,
-          (unsigned short *)&outcome);
-
+    unsigned char outcome =
+        tcp_parse(command, argument0, argument1);
     bytes = write_all(sd, &outcome, sizeof(outcome));
     if (errno || bytes != sizeof(outcome))
     {

@@ -10,7 +10,6 @@
 
 #define RETRY_COMMAND 0                 // invalid commands
 #define RETRY_ARGUMENT COUNT_ROUTES_MAX // invalid argument
-#define RECV_FAIL 0
 
 /* comments:
  * this file contains functions to validate input
@@ -169,6 +168,11 @@ argument_validation1(const char *const buffer,
             strtoul(buffer, &condition, number_base);
         if ('\0' != *condition)
             return 0;
+        if(number >= UCHAR_MAX)
+        {
+            warning("a train can be at most 180 minutes late");
+            return 0;
+        }
 
         *argument1 = number; // success
         return condition - buffer;

@@ -1,16 +1,16 @@
-### objectives: order of implementation
+### to do
 
-0. input valiodation for tcp as well
-
-0. please type better names / identation / scoping
+0. improve upon client input validation
+0. more test cases
+0. better names/identation/scoping/messages
 0. conc_serv
-0. login logout and register
 0. cpp rate
 
-### terminology
+### assumptions
 
 - set == encode == encrypt
 - get == decode == decrpyt
+- 
 
 ### disconnection
 
@@ -55,13 +55,9 @@
 | 5    | report     |
 | 6    | quit       |
 
-### xml part
-
-- reading from it returns xmlChar * => char* => unsigned char
-
-
 ### random ideas
 
+- weird identation? doing so you can see two files at once on your IDE
 - all errno numbers: /usr/include/asm-generic/errno.h
 - if the server has problems with clients, it won't shut down; instead the clients will be forced to restart the connection
 - useful function witch doesn't work: xmlKeepBlanksDefault();
