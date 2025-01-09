@@ -3,6 +3,7 @@
 
 #include <time.h>
 #include <stdbool.h>
+#include "route.h"
 #include "shared.h"
 
 extern struct rr_route schedule[COUNT_ROUTES_MAX];

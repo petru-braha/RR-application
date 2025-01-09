@@ -19,7 +19,10 @@
 #include <string.h>
 #include <stdbool.h>
 
-#include "../include/shared.h"
+#include "../include/communication.h"
+#include "../include/error.h"
+#include "../include/printer.h"
+#include "../include/route.h"
 #include "../include/server_xml.h"
 #include "../include/server_api.h"
 
@@ -216,6 +219,9 @@ void *tcp_communication(int sd)
     ssize_t bytes = read_all(sd, &command, sizeof(command));
     bytes += read_all(sd, &argument0, sizeof(argument0));
     bytes += read_all(sd, &argument1, sizeof(argument1));
+
+    printf("%d %d %d\n", command, argument0, argument1);
+
     if (errno || bytes != 4)
     {
         warning("client disconnected while receving command");

@@ -1,7 +1,8 @@
 ### objectives: order of implementation
 
-0. test cases
+0. input valiodation for tcp as well
 
+0. please type better names / identation / scoping
 0. conc_serv
 0. login logout and register
 0. cpp rate

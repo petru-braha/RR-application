@@ -3,10 +3,10 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <time.h>
 #include "error.h"
 #include "route.h"
-
-#define BYTES_COMMAND_MAX 40
+#include "shared.h"
 
 /*
 const char synopsis0[] = "0. [id_train, time_departure_confirmed, time_arrival_confirmed] routes(location_departure, location_arrival)";
@@ -73,8 +73,8 @@ void codetostring(unsigned char *const string,
 
 // returns strlen(location)
 unsigned short stringtocode(const char *const string,
-                  unsigned short *const code,
-                  const char *const path)
+                            unsigned short *const code,
+                            const char *const path)
 {
   *code = COUNT_LOCATION;
   FILE *file = fopen(path, "r");
@@ -113,8 +113,6 @@ unsigned short stringtocode(const char *const string,
 void client_print(struct rr_route r,
                   const char *const path)
 {
-  // store how many minute it was late
-  // todo check for flags and print and delete/store
   char d[BYTES_COMMAND_MAX], a[BYTES_COMMAND_MAX];
   codetostring(d, get_location(r.departure_data), path);
   codetostring(a, get_location(r.arrival_data), path);
@@ -124,8 +122,54 @@ void client_print(struct rr_route r,
 
   printf("%s(%02d:%02d) -> ", d,
          d_time / 60, d_time % 60);
-  printf("%s(%02d:%02d)\n", a,
+  printf("%s(%02d:%02d) - ", a,
          a_time / 60, a_time % 60);
+
+  // status print
+  time_t t = time(NULL);
+  struct tm tm = *localtime(&t);
+  unsigned short current_time =
+      tm.tm_hour * 60 + tm.tm_min;
+
+  // not departed
+  if (current_time < get_time(r.departure_data))
+  {
+    if (r.delay_data)
+      if (r.delay_data >= DELEY_MAX)
+        printf("faulted - won't be available;\n");
+      else
+        printf("will depart %d minutes later;\n",
+               r.delay_data);
+    else // no reports on it
+      printf("will depart in %d minutes;\n",
+             get_time(r.departure_data) - current_time);
+    return;
+  }
+
+  // departed and not arrived
+  if (current_time < get_time(r.arrival_data))
+  {
+    if (r.delay_data)
+      if (r.delay_data >= DELEY_MAX)
+        printf("faulted - won't arrive to destination;\n");
+      else
+        printf("will be %d minutes late;\n",
+               r.delay_data);
+    else // no reports on it
+      printf("will arrive in %d minutes;\n",
+             get_time(r.arrival_data) - current_time);
+    return;
+  }
+
+  // departed and supposedly arrived
+  if (r.delay_data)
+    if (r.delay_data >= DELEY_MAX)
+      printf("faulted - didn't arrive to destination;\n");
+    else
+      printf("arrived %d minutes later;\n",
+             r.delay_data);
+  else // no reports on it
+    printf("arrived at the right time;\n");
 }
 
 void server_print(struct rr_route r)
