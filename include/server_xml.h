@@ -4,6 +4,7 @@
 #include <sys/wait.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <string.h>
 
 #include <libxml2/libxml/xmlmemory.h>
 #include <libxml2/libxml/parser.h>
@@ -13,9 +14,10 @@
 #include "route.h"
 
 // takes a path of the binary file
-int write_xml(const char *const path)
+int write_xml(const char *const path,
+              const char *const path_location)
 {
-    if (NULL == path)
+    if (NULL == path || NULL == path_location)
     {
         error("write_xml() failed - null path");
         return EXIT_FAILURE;
@@ -24,7 +26,7 @@ int write_xml(const char *const path)
     pid_t process = fork();
     if (0 == process)
     {
-        execv(path, NULL);
+        execl(path, path_location, NULL);
         error("write_xml() failed - execv()");
         return EXIT_FAILURE;
     }
@@ -68,7 +70,7 @@ int read_xml(const char *const path)
             continue;
 
         unsigned short time = 0;
-        struct rr_route new_route = {0, 0, 0};
+        struct rr_route new_route = {0, 0, 0, 0};
         xmlNodePtr data;
         xmlChar *pulled;
 
@@ -130,6 +132,7 @@ int read_xml(const char *const path)
         new_route.arrival_data += COUNT_LOCATION * time;
 
         // success
+        new_route.id_train = index_route;
         schedule[index_route++] = new_route;
     }
 

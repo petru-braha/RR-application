@@ -124,6 +124,7 @@ void client_print(struct rr_route r,
          d_time / 60, d_time % 60);
   printf("%s(%02d:%02d) - ", a,
          a_time / 60, a_time % 60);
+  printf("train id: %d - ", r.id_train);
 
   // status print
   time_t t = time(NULL);

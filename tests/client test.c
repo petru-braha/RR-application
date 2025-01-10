@@ -116,13 +116,9 @@ recv_command(unsigned char *const command,
 {
   ssize_t bytes = 0;
   char buffer[BYTES_COMMAND_MAX];
-  for (*command = RETRY_COMMAND,
-      *argument0 = RETRY_ARGUMENT,
-      *argument1 = RETRY_ARGUMENT;
-
-       RETRY_COMMAND == *command ||
-       RETRY_ARGUMENT == *argument0 ||
-       RETRY_ARGUMENT == *argument1;)
+  for (; RETRY_COMMAND == *command ||
+         RETRY_ARGUMENT == *argument0 ||
+         RETRY_ARGUMENT == *argument1;)
   {
     explicit_bzero(buffer, BYTES_COMMAND_MAX);
     char *string = buffer;
@@ -277,15 +273,15 @@ static int print_data(const unsigned char command,
   if (TCP_CODE_R == command)
   {
     if (RECV_FAIL == argument0)
-      return printf("reporting failed.\n");
-    return printf("reporting succeeded.\n");
+      return printf("reporting failed.\n\n");
+    return printf("reporting succeeded.\n\n");
   }
 
   if (TCP_CODE_Q == command)
   {
     if (RECV_FAIL == argument0)
-      return printf("quiting failed to fetch with server.\n");
-    return printf("quiting succeeded.\n");
+      return printf("quiting failed to fetch with server.\n\n");
+    return printf("quiting succeeded.\n\n");
   }
 
   if (NULL == data && argument0)

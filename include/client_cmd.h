@@ -17,7 +17,7 @@
  */
 
 /* returns how should the pointer change
- * DOES NOT provides error messages
+ * provides error messages
  */
 static unsigned char
 command_validation(const char *const buffer,
@@ -65,7 +65,7 @@ command_validation(const char *const buffer,
 }
 
 /* returns how should the pointer change
- * DOES NOT provides error messages
+ * provides error messages
  */
 static unsigned char
 argument_validation(const char *const buffer,
@@ -102,10 +102,7 @@ argument_validation(const char *const buffer,
         unsigned long number =
             strtoul(buffer, &condition, number_base);
         if ('\0' != *condition)
-        {
-            printf("%d\n", *condition);
             return 0;
-        }
 
         // success
         *argument = number;

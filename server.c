@@ -1,5 +1,9 @@
-/* server.c - a concurrent server with i/o multiplexing, and two transport protocols
+/* comments:
+ * server.c - a concurrent server with i/o multiplexing, and two transport protocols
  * author - Braha Petru Bogdan - <petrubraha@gmail.com> (c)
+ * compilation command: gcc server.c -I/usr/include/libxml2 -lxml2 -o sv
+ * run command example: ./sv 'schedule.xml'
+ * run command example: ./sv
  */
 
 #include <unistd.h>
@@ -19,237 +23,393 @@
 #include <string.h>
 #include <stdbool.h>
 
-#include "include/shared.h"
-#include "include/command.h"
+#include "include/communication.h"
+#include "include/error.h"
+#include "include/printer.h"
+#include "include/route.h"
+#include "include/server_xml.h"
+#include "include/server_api.h"
 
-//------------------------------------------------
-//! global variables
-
-const uint16_t port = 2970;
-
-const int ONE_CLIENT_ONLY = 1;
-const int TWO_CLIENT_ONLY = 2;
-const int COUNT_CLIENT_MAX = 1024;
+#define path_thread "include/dev/key.txt"
+#define path_stable "include/data/default schedule.xml"
+#define path_binary "include/dev/write_xml"
+#define name_random "random schedule.xml"
+#define path_to_build "include/data/"
+#define path_location "include/data/random schedule.xml"
 
 typedef struct
 {
-    fd_set container;
-    int count;
+  fd_set container;
+  int count;
 } rr_fd;
-
-struct timeval TV = {1, 0};
 rr_fd descriptors;
-
-int sd_udp = -1;
+int sd_udp;
 
 //------------------------------------------------
-//! methods
 
-// a server should always be online
-bool running_condition()
+void check_xml(int *argc, char *argv[],
+               char *const path_xml);
+bool running_condition();
+int maintenance(pthread_t *th0, pthread_t *th1,
+                const int argc,
+                char *const path_xml);
+
+// three threads
+void *udp_communication(void *);
+void *multiplexing(void *);
+int main(int argc, char *argv[]);
+
+//------------------------------------------------
+
+int main(int argc, char *argv[])
 {
-    int fd = open("include/dev/key.txt", O_RDONLY);
-    call_var(fd);
+  char path_xml[BYTES_PATH_MAX];
+  strcpy(path_xml, path_to_build);
 
-    char key = '0';
-    call(read(fd, &key, 1));
-    call(close(fd));
+  check_xml(&argc, argv, path_xml);
+  read_xml(path_xml);
+  call(printf("%d routes are valid.\n", count_routes));
 
-    return '1' == key;
+  // server address
+  const uint16_t port = 2970;
+  struct sockaddr_in skadd_server;
+  skadd_server.sin_family = AF_INET;
+  skadd_server.sin_addr.s_addr = htonl(INADDR_ANY);
+  skadd_server.sin_port = htons(port);
+
+  FD_ZERO(&descriptors.container);
+
+  // tcp
+  const int ONE_CLIENT_ONLY = 1;
+  const int TWO_CLIENT_ONLY = 2;
+  const int COUNT_CLIENT_MAX = 1024;
+
+  int sd_listen =
+      socket(AF_INET,
+             SOCK_STREAM | SOCK_NONBLOCK, 0);
+  call_var(sd_listen);
+
+  call(bind(sd_listen,
+            (struct sockaddr *)&skadd_server,
+            sizeof(struct sockaddr)));
+  call(listen(sd_listen, COUNT_CLIENT_MAX));
+
+  int option = 1;
+  call(setsockopt(sd_listen,
+                  SOL_SOCKET, SO_REUSEADDR,
+                  &option, sizeof(option)));
+
+  // udp
+  sd_udp = socket(AF_INET, SOCK_DGRAM | SOCK_NONBLOCK, 0);
+  call_var(sd_udp);
+  call(bind(sd_udp,
+            (struct sockaddr *)&skadd_server,
+            sizeof(struct sockaddr)));
+
+  // loops: i/o multiplexing and non-blocking accepts
+  pthread_t multiplexing_thread;
+  call0(pthread_create(&multiplexing_thread, NULL,
+                       &multiplexing, NULL));
+  pthread_t udp_thread;
+  call0(pthread_create(&udp_thread, NULL,
+                       &udp_communication, NULL));
+
+  call(printf("the server is online.\n\n"));
+  bool maintenance_flag = true;
+  for (; running_condition();)
+  {
+    // maintenance time
+    time_t t = time(NULL);
+    struct tm tm = *localtime(&t);
+    if (0 == tm.tm_hour && 0 == tm.tm_min &&
+        maintenance_flag)
+    {
+      if (ERR_CODE ==
+          maintenance(&multiplexing_thread,
+                      &udp_thread, argc, path_xml))
+        error("maintenance() failed");
+      maintenance_flag = false;
+    }
+    else
+      maintenance_flag = true;
+
+    // additional error check
+    if (errno)
+    {
+      warning(strerror(errno));
+      errno = 0;
+    }
+
+    // accepted client
+    int sd_client = accept(sd_listen, NULL, NULL);
+    if (errno && EWOULDBLOCK != errno)
+      error(strerror(errno));
+    errno = 0;
+    if (ERR_CODE == sd_client)
+      continue;
+    if (ERR_CODE == ioctl(sd_client, FIONBIO, &option))
+    {
+      error(strerror(errno));
+      errno = 0;
+      continue;
+    }
+
+    // sets
+    FD_SET(sd_client, &descriptors.container);
+    if (sd_client >= descriptors.count)
+      descriptors.count = sd_client + 1;
+  }
+
+  // the server closes, an admin key was used
+  // using call() is now accepted
+  call0(pthread_join(multiplexing_thread, NULL));
+  call0(pthread_join(udp_thread, NULL));
+  for (int fd = 0; fd < descriptors.count; fd++)
+    if (FD_ISSET(fd, &descriptors.container))
+    {
+      warning("not closed socket");
+      close(fd);
+    }
+
+  call(close(sd_listen));
+  call(close(sd_udp));
+  call(printf("the server is offline.\n\n"));
+  return EXIT_SUCCESS;
 }
 
-// main thread
-void *multiplexing(void *);
-
-// main thread
+// receives three bytes sends two bytes at minimum
 void *udp_communication(void *)
 {
-    char command[BYTES_COMMAND_MAX];
-    struct sockaddr_in skaddr_client;
-    socklen_t length = sizeof(skaddr_client);
+  // todo received udp socket as parameter not global
+  unsigned char buffer[3];
+  struct sockaddr_in skaddr_client;
+  socklen_t length = sizeof(skaddr_client);
 
-    for (; running_condition();)
+  for (; running_condition();)
+  {
+    int bytes =
+        recvfrom(sd_udp, buffer,
+                 3 * sizeof(char), NO_FLAG,
+                 (struct sockaddr *)&skaddr_client,
+                 &length);
+
+    if (ERR_CODE == bytes)
     {
-        int bytes =
-            recvfrom(sd_udp, command,
-                     BYTES_COMMAND_MAX, NO_FLAG,
-                     (struct sockaddr *)&skaddr_client,
-                     &length);
-
-        if (-1 == bytes)
-        {
-            if (EWOULDBLOCK == errno)
-            {
-                errno = 0;
-                continue;
-            }
-            else
-                call_var(-1);
-        }
-
-        char outcome[BYTES_OUTCOME_MAX];
-        parse_command(command, outcome);
-
-        sendto(sd_udp, outcome,
-               BYTES_OUTCOME_MAX,
-               NO_FLAG,
-               (struct sockaddr *)&skaddr_client,
-               length);
+      if (EWOULDBLOCK != errno)
+        error("recvfrom() failed");
+      errno = 0;
+      continue;
     }
+
+    struct rr_route data[COUNT_ROUTES_MAX];
+    unsigned short count =
+        udp_parse(buffer[0], buffer[1],
+                  buffer[2], data);
+
+    sendto(sd_udp, &count, sizeof(count), NO_FLAG,
+           (struct sockaddr *)&skaddr_client,
+           length);
+
+    sendto(sd_udp, data,
+           count * sizeof(struct rr_route),
+           NO_FLAG,
+           (struct sockaddr *)&skaddr_client,
+           length);
+  }
 }
 
-//------------------------------------------------
-
-// main thread; in total being: three main threads
-int main()
+// receives four bytes, sends one byte
+void *tcp_communication(const int sd)
 {
-    // server address
-    struct sockaddr_in skadd_server;
-    skadd_server.sin_family = AF_INET;
-    skadd_server.sin_addr.s_addr = htonl(INADDR_ANY);
-    skadd_server.sin_port = htons(port);
-
-    FD_ZERO(&descriptors.container);
-
-    // tcp
-    int sd_listen =
-        socket(AF_INET,
-               SOCK_STREAM | SOCK_NONBLOCK, 0);
-    call_var(sd_listen);
-
-    call(bind(sd_listen,
-              (struct sockaddr *)&skadd_server,
-              sizeof(struct sockaddr)));
-    call(listen(sd_listen, COUNT_CLIENT_MAX));
-
-    int option = 1;
-    call(setsockopt(sd_listen,
-                    SOL_SOCKET, SO_REUSEADDR,
-                    &option, sizeof(option)));
-
-    // udp
-    sd_udp = socket(AF_INET, SOCK_DGRAM | SOCK_NONBLOCK, 0);
-    call_var(sd_udp);
-    call(bind(sd_udp,
-              (struct sockaddr *)&skadd_server,
-              sizeof(struct sockaddr)));
-
-    // loops: i/o multiplexing and non-blocking accepts
-    pthread_t multiplexing_thread;
-    call0(pthread_create(&multiplexing_thread, NULL,
-                         &multiplexing, NULL));
-    pthread_t udp_thread;
-    call0(pthread_create(&udp_thread, NULL,
-                         &udp_communication, NULL));
-
-    call(printf("the server is online.\n\n"));
-    for (; running_condition();)
-    {
-        // error check
-        if (0 != errno)
-        {
-            warning(strerror(errno));
-            errno = 0;
-        }
-
-        // accepted client
-        int sd_client = accept(sd_listen, NULL, NULL);
-        call_noblock(sd_client);
-        if (-1 == sd_client)
-            continue;
-        call(ioctl(sd_client, FIONBIO, &option));
-
-        // sets
-        FD_SET(sd_client, &descriptors.container);
-        if (sd_client >= descriptors.count)
-            descriptors.count = sd_client + 1;
-    }
-
-    // the server closes, an admin key was used
-    call0(pthread_join(multiplexing_thread, NULL));
-    call0(pthread_join(udp_thread, NULL));
-    for (int fd = 0; fd < descriptors.count; fd++)
-        if (FD_ISSET(fd, &descriptors.container))
-            call(printf("warning: %d is not closed.\n", fd));
-
-    call(close(sd_listen));
-    call(close(sd_udp));
-    call(printf("the server is offline.\n\n"));
-    return EXIT_SUCCESS;
-}
-
-//------------------------------------------------
-//! other
-
-void *tcp_communication(int sd)
-{
-    if (!FD_ISSET(sd, &descriptors.container))
-        return NULL;
-
-    char command[BYTES_COMMAND_MAX];
-    ssize_t bytes = read_all(sd, command, BYTES_COMMAND_MAX);
-
-    if (errno || bytes < 1)
-    {
-        warning("client disconnected while receving command");
-        if (ECONNRESET != errno && errno)
-            error(strerror(errno));
-
-        FD_CLR(sd, &descriptors.container);
-        call(close(sd));
-        errno = 0;
-        return NULL;
-    }
-
-    char outcome[BYTES_OUTCOME_MAX];
-    parse_command(command, outcome);
-
-    bytes = write_all(sd, outcome, BYTES_OUTCOME_MAX);
-
-    if (errno || bytes < 1)
-    {
-        warning("client disconnected while sending outcome");
-        if (ECONNRESET != errno && errno)
-            error(strerror(errno));
-
-        FD_CLR(sd, &descriptors.container);
-        call(close(sd));
-        errno = 0;
-        return NULL;
-    }
-
-    if (0 == strcmp(command, "quit"))
-    {
-        FD_CLR(sd, &descriptors.container);
-        call(close(sd));
-    }
-
+  if (!FD_ISSET(sd, &descriptors.container))
     return NULL;
+
+  unsigned char command = 0, argument1 = 0;
+  unsigned short argument0 = 0;
+  ssize_t bytes = read_all(sd, &command, sizeof(command));
+  bytes += read_all(sd, &argument0, sizeof(argument0));
+  bytes += read_all(sd, &argument1, sizeof(argument1));
+  if (errno || bytes != 4)
+  {
+    warning("client disconnected while receving command");
+    if (ECONNRESET != errno && errno)
+      error(strerror(errno));
+
+    FD_CLR(sd, &descriptors.container);
+    if (ERR_CODE == close(sd))
+      error("close() failed");
+    errno = 0;
+    return NULL;
+  }
+
+  unsigned char outcome =
+      tcp_parse(command, argument0, argument1);
+  bytes = write_all(sd, &outcome, sizeof(outcome));
+  if (errno || bytes != sizeof(outcome))
+  {
+    warning("client disconnected while sending outcome");
+    if (ECONNRESET != errno && errno)
+      error(strerror(errno));
+
+    FD_CLR(sd, &descriptors.container);
+    if (ERR_CODE == close(sd))
+      error("close() failed");
+    errno = 0;
+    return NULL;
+  }
+
+  if (TCP_CODE_Q == command)
+  {
+    FD_CLR(sd, &descriptors.container);
+    if (ERR_CODE == close(sd))
+      error("close() failed");
+  }
+
+  return NULL;
 }
 
 void *multiplexing(void *)
 {
-    for (; running_condition();)
+  struct timeval TV = {1, 0};
+  for (; running_condition();)
+  {
+    fd_set tcp_fd;
+    memcpy(&tcp_fd, &descriptors.container,
+           sizeof(descriptors.container));
+
+    int count_selected =
+        select(descriptors.count, &tcp_fd,
+               NULL, NULL, &TV);
+
+    if (ERR_CODE == count_selected)
+      error("select() failed");
+    for (int sd = 4;
+         sd < descriptors.count &&
+         count_selected;
+         sd++)
+      if (FD_ISSET(sd, &tcp_fd))
+      {
+        tcp_communication(sd);
+        count_selected--;
+      }
+  }
+
+  return NULL;
+}
+
+//------------------------------------------------
+
+void check_xml(int *argc, char *argv[],
+               char *const path_xml)
+{
+  if (*argc > 2)
+  {
+    error("at most one xml file name is expected.\n");
+    exit(EXIT_FAILURE);
+  }
+
+  if (1 == *argc)
+  {
+    strcat(path_xml, name_random);
+    if (EXIT_FAILURE ==
+        write_xml(path_binary, path_location))
+      strcpy(path_xml, path_stable);
+    return;
+  }
+
+  // 2 == argc
+  char path_tmp[BYTES_PATH_MAX];
+  strcpy(path_tmp, path_xml);
+  strcat(path_tmp, argv[1]);
+  if (0 == test_xml(path_tmp))
+  {
+    strcat(path_xml, argv[1]);
+    return;
+  }
+
+  // random generation
+  *argc = 1; // later generations
+  strcat(path_xml, name_random);
+  if (EXIT_FAILURE ==
+      write_xml(path_binary, path_location))
+    strcpy(path_xml, path_stable);
+}
+
+/* a server should always be online
+ * this should always return true
+ * provides error messages
+ */
+bool running_condition()
+{
+  char key = '0';
+  int fd = open(path_thread, O_RDONLY);
+  if (ERR_CODE == fd ||
+      ERR_CODE == read_all(fd, &key, sizeof(key)) ||
+      ERR_CODE == close(fd))
+  {
+    error("running_condition() failed");
+    return false;
+  }
+
+  return '1' == key;
+}
+
+/* even though clients are not served at this time
+ * if something goes wrong here,
+ * the server shouldn't stop
+ * DOES NOT provide error message
+ * returns the count of routes newly accessed
+ */
+int maintenance(pthread_t *th0, pthread_t *th1,
+                const int argc,
+                char *const path_xml)
+{
+  if (NULL == th0 || NULL == th1 || NULL == path_xml)
+    return ERR_CODE;
+
+  // stop serving clients
+  char key = '0'; // security--
+  int fd = open(path_thread, O_WRONLY);
+  if (ERR_CODE == fd ||
+      sizeof(key) != write_all(fd, &key, sizeof(key)) ||
+      ERR_CODE == close(fd))
+    return ERR_CODE;
+
+  if (pthread_join(*th0, NULL) ||
+      pthread_join(*th1, NULL))
+    return ERR_CODE;
+
+  for (int fd = 0; fd < descriptors.count; fd++)
+    if (FD_ISSET(fd, &descriptors.container))
     {
-        fd_set tcp_fd;
-        memcpy(&tcp_fd, &descriptors.container,
-               sizeof(descriptors.container));
-
-        int count_selected =
-            select(descriptors.count, &tcp_fd,
-                   NULL, NULL, &TV);
-
-        call_var(count_selected);
-        for (int sd = 4;
-             sd < descriptors.count &&
-             count_selected;
-             sd++)
-            if (FD_ISSET(sd, &tcp_fd))
-            {
-                tcp_communication(sd);
-                count_selected--;
-            }
+      warning("not closed socket");
+      close(fd);
     }
 
-    return NULL;
+  // check the new schedule for today
+  if (1 == argc)
+  {
+    if (EXIT_FAILURE ==
+        write_xml(path_binary, path_location))
+      strcpy(path_xml, path_stable);
+  }
+  read_xml(path_xml);
+
+  // restart threads
+  if (pthread_create(th0, NULL,
+                     &multiplexing, NULL) ||
+      pthread_create(th0, NULL,
+                     &udp_communication, NULL))
+    return ERR_CODE;
+
+  // restart serving clients
+  key = '1'; // security--
+  fd = open(path_thread, O_WRONLY);
+  if (ERR_CODE == fd ||
+      sizeof(key) != write_all(fd, &key, sizeof(key)) ||
+      ERR_CODE == close(fd))
+    return ERR_CODE;
+
+  // success
+  return count_routes;
 }
