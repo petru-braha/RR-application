@@ -1,8 +1,6 @@
 ### to do
 
-0. client input validation - departures arrivals - see protocol
-0. improve upon client input validation
-0. more test cases
+0. include id_train maybe
 0. better names/identation/scoping/messages
 
 <br>

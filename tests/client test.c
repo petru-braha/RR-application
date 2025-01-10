@@ -34,18 +34,22 @@ struct sockaddr_in skadd_server;
 static void exit_client(const int status);
 
 // four procedures
-static ssize_t recv_command(unsigned char *const command,
-                            unsigned short *const argument0,
-                            unsigned short *const argument1);
-ssize_t send_command(const unsigned char command,
-                     const unsigned short argument0,
-                     const unsigned short argument1);
-ssize_t recv_outcome(const unsigned char command,
-                     unsigned short *const argument0,
-                     struct rr_route *const data);
-static int print_data(const unsigned char command,
-                      const unsigned short argument0,
-                      const struct rr_route *const data);
+static ssize_t
+recv_command(unsigned char *const command,
+             unsigned short *const argument0,
+             unsigned short *const argument1);
+ssize_t
+send_command(const unsigned char command,
+             const unsigned short argument0,
+             const unsigned short argument1);
+ssize_t
+recv_outcome(const unsigned char command,
+             unsigned short *const argument0,
+             struct rr_route *const data);
+static int
+print_data(const unsigned char command,
+           const unsigned short argument0,
+           const struct rr_route *const data);
 
 //------------------------------------------------
 
@@ -79,7 +83,7 @@ int main(int argc, char *argv[])
     return EXIT_FAILURE;
   }
 
-  call(printf("welcome, you may type commands.\n\n"));
+  call(printf("welcome.\n\n"));
   unsigned char command = 0;
   unsigned short argument0 = 0, argument1 = 0;
   struct rr_route outcome[COUNT_ROUTES_MAX];
@@ -111,9 +115,7 @@ recv_command(unsigned char *const command,
              unsigned short *const argument1)
 {
   ssize_t bytes = 0;
-  char *const line = malloc(BYTES_COMMAND_MAX);
-  *command = RETRY_COMMAND;
-
+  char buffer[BYTES_COMMAND_MAX];
   for (*command = RETRY_COMMAND,
       *argument0 = RETRY_ARGUMENT,
       *argument1 = RETRY_ARGUMENT;
@@ -122,67 +124,51 @@ recv_command(unsigned char *const command,
        RETRY_ARGUMENT == *argument0 ||
        RETRY_ARGUMENT == *argument1;)
   {
-    explicit_bzero(line, BYTES_COMMAND_MAX);
-    char *buffer = line;
-    bytes = read(STDIN_FILENO, line, BYTES_COMMAND_MAX);
-    repair(line);
-
-    unsigned char size =
-        command_validation(buffer, command);
-    bytes += size;
-
-    if (TCP_CODE_Q == *command)
-    {
-      if ('\0' != *(buffer + 4))
-      {
-        warning("quit does not take arguments");
-        continue;
-      }
-
-      *argument0 = *argument1 = 0;
-      break;
-    }
-
-    if (TCP_CODE_Q != *command &&
-        false == consume_input(&buffer, size))
-    {
-      warning("this command takes two arguments");
-      continue;
-    }
+    explicit_bzero(buffer, BYTES_COMMAND_MAX);
+    char *string = buffer;
+    printf("your command: ");
+    fflush(stdout);
+    call(read(STDIN_FILENO, string, BYTES_COMMAND_MAX));
+    repair(string);
+    bytes = command_validation(string, command);
     if (RETRY_COMMAND == *command)
     {
       warning("invalid command");
       continue;
     }
+    if (TCP_CODE_Q == *command)
+      break;
 
-    size = argument_validation0(buffer,
-                                *command,
-                                argument0);
-    bytes += size;
-    if (TCP_CODE_Q != *command &&
-        false == consume_input(&buffer, size))
-    {
-      warning("this command takes two arguments");
-      continue;
-    }
+    // command accepted, check argument0
+    string = buffer + bytes;
+    printf("your argument0: ");
+    fflush(stdout);
+    call(read(STDIN_FILENO, string, BYTES_COMMAND_MAX));
+    repair(string);
+    bytes += argument_validation(string, *command, argument0);
     if (RETRY_ARGUMENT == *argument0)
     {
       warning("invalid first argument");
       continue;
     }
+    if (UDP_CODE_D == *command || UDP_CODE_A == *command)
+      break;
 
-    size = argument_validation1(buffer,
-                                *command,
-                                *argument0,
-                                argument1);
-    bytes += size;
-    buffer += size; // here we don't cosume, aviod warning
-
-    if (RETRY_ARGUMENT == *argument1 || '\0' != buffer[0])
+    // argument0 accepted, check argument1
+    string = buffer + bytes;
+    printf("your argument1: ");
+    fflush(stdout);
+    call(read(STDIN_FILENO, string, BYTES_COMMAND_MAX));
+    repair(string);
+    bytes += argument_validation(string, *command, argument1);
+    if ((UDP_CODE_R == *command && *argument0 == *argument1) ||
+        (TCP_CODE_R == *command && 0 == *argument1))
+      *argument1 = RETRY_ARGUMENT;
+    if (RETRY_ARGUMENT == *argument1)
       warning("invalid second argument");
   }
 
-  free(line);
+  printf("\n");
   return bytes;
 }
 
@@ -308,6 +294,7 @@ static int print_data(const unsigned char command,
   printf("%d routes received.\n", argument0);
   for (unsigned short i = 0; i < argument0; i++)
     client_print(data[i], path_location);
+  printf("\n");
   return argument0 * sizeof(struct rr_route);
 }
 

@@ -2,6 +2,7 @@
 #define _00ERROR00_
 
 #include <stdio.h>
+#include <errno.h>
 
 #define warning(message) printf("warning: %s.\n", message)
 #define error(message) printf("line %d error: %s.\n", __LINE__, message)

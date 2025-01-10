@@ -15,16 +15,15 @@ unsigned short routes(struct rr_route *const data,
                       const unsigned char l_a)
 {
     if (NULL == data)
-    {
-        error("routes() received null data");
         return RECV_FAIL;
-    }
+    if (l_d >= COUNT_LOCATION || l_a >= COUNT_LOCATION)
+        return RECV_FAIL;
 
     unsigned short index_route = 0;
     for (unsigned short i = 0; i < count_routes; i++)
     {
         if (l_d != get_location(schedule[i].departure_data))
-            break;
+            continue;
         if (l_a == get_location(schedule[i].arrival_data))
             data[index_route++] = schedule[i];
     }
@@ -38,6 +37,8 @@ unsigned short departures(struct rr_route *const data,
                           const unsigned short l_d)
 {
     if (NULL == data)
+        return RECV_FAIL;
+    if (l_d >= COUNT_LOCATION)
         return RECV_FAIL;
 
     time_t t = time(NULL);
@@ -67,6 +68,8 @@ unsigned short arrivals(struct rr_route *const data,
                         const unsigned short l_a)
 {
     if (NULL == data)
+        return RECV_FAIL;
+    if (l_a >= COUNT_LOCATION)
         return RECV_FAIL;
 
     time_t t = time(NULL);
@@ -139,7 +142,7 @@ unsigned short udp_parse(const unsigned char command,
 {
     if (NULL == data)
     {
-        warning("udp_parse() received null pointer");
+        warning("udp_parse() received null argument");
         return RECV_FAIL;
     }
 
@@ -150,7 +153,7 @@ unsigned short udp_parse(const unsigned char command,
     case UDP_CODE_D:
         return departures(data, argument0);
     case UDP_CODE_A:
-        return arrivals(data, argument1);
+        return arrivals(data, argument0);
 
     default: // maybe udp
         if (command > TCP_CODE_Q)

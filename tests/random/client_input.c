@@ -1,6 +1,9 @@
 
 #include <stdio.h>
 #include <unistd.h>
+#include "../../include/error.h"
+
+#define path_location "../../include/data/location.txt"
 #include "../../include/client_cmd.h"
 
 /* each command has at most two arguments
@@ -12,9 +15,7 @@ recv_command(unsigned char *const command,
              unsigned short *const argument1)
 {
     ssize_t bytes = 0;
-    char *const line = malloc(BYTES_COMMAND_MAX);
-    *command = RETRY_COMMAND;
-
+    char buffer[BYTES_COMMAND_MAX];
     for (*command = RETRY_COMMAND,
         *argument0 = RETRY_ARGUMENT,
         *argument1 = RETRY_ARGUMENT;
@@ -23,83 +24,58 @@ recv_command(unsigned char *const command,
          RETRY_ARGUMENT == *argument0 ||
          RETRY_ARGUMENT == *argument1;)
     {
-        explicit_bzero(line, BYTES_COMMAND_MAX);
-        char *buffer = line;
-        bytes = read(STDIN_FILENO, line, BYTES_COMMAND_MAX);
-        repair(line);
-
-        unsigned char size =
-            command_validation(buffer, command);
-        bytes += size;
-
-        if (TCP_CODE_Q == *command)
-        {
-            if ('\0' != *(buffer + 4))
-            {
-                warning("quit does not take arguments");
-                continue;
-            }
-
-            *argument0 = *argument1 = 0;
-            break;
-        }
-
-        if (TCP_CODE_Q != *command &&
-            false == consume_input(&buffer, size))
-        {
-            warning("this command takes two arguments");
-            continue;
-        }
+        explicit_bzero(buffer, BYTES_COMMAND_MAX);
+        char *string = buffer;
+        printf("your command: ");
+        fflush(stdout);
+        call(read(STDIN_FILENO, string, BYTES_COMMAND_MAX));
+        repair(string);
+        bytes = command_validation(string, command);
         if (RETRY_COMMAND == *command)
         {
             warning("invalid command");
             continue;
         }
+        if (TCP_CODE_Q == *command)
+            break;
 
-        size = argument_validation0(buffer,
-                                    *command,
-                                    argument0);
-        bytes += size;
-        if (TCP_CODE_Q != *command &&
-            false == consume_input(&buffer, size))
-        {
-            warning("this command takes two arguments");
-            continue;
-        }
+        // command accepted, check argument0
+        string = buffer + bytes;
+        printf("your argument0: ");
+        fflush(stdout);
+        call(read(STDIN_FILENO, string, BYTES_COMMAND_MAX));
+        repair(string);
+        bytes += argument_validation(string, *command, argument0);
         if (RETRY_ARGUMENT == *argument0)
         {
             warning("invalid first argument");
             continue;
         }
+        if (UDP_CODE_D == *command || UDP_CODE_A == *command)
+            break;
 
-        size = argument_validation1(buffer,
-                                    *command,
-                                    *argument0,
-                                    argument1);
-        bytes += size;
-        buffer += size; // here we don't cosume, aviod warning
-
-        if (RETRY_ARGUMENT == *argument1 || '\0' != buffer[0])
+        // argument0 accepted, check argument1
+        string = buffer + bytes;
+        printf("your argument1: ");
+        fflush(stdout);
+        call(read(STDIN_FILENO, string, BYTES_COMMAND_MAX));
+        repair(string);
+        bytes += argument_validation(string, *command, argument1);
+        if ((UDP_CODE_R == *command && *argument0 == *argument1) ||
+            (TCP_CODE_R == *command && 0 == *argument1))
+            *argument1 = RETRY_ARGUMENT;
+        if (RETRY_ARGUMENT == *argument1)
             warning("invalid second argument");
     }
 
-    free(line);
     return bytes;
 }
 
+// success
 int main()
 {
     unsigned char c = 0;
     unsigned short a = 0, b = 0;
     recv_command(&c, &a, &b);
+    printf("%d %d %d.\n", c, a, b);
 }
-
-/* treated:
- * wrong number of arguments
- * wrong argument types (numbers)
- * invalid arguments (non-existant in database)
-
-todo:\
-- wrong number of spaces ?
-- report 1 ' ' - should print number of arg
-*/
