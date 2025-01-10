@@ -121,14 +121,19 @@ int main(int argc, char *argv[])
     // maintenance time
     time_t t = time(NULL);
     struct tm tm = *localtime(&t);
-    if (0 == tm.tm_hour && 0 == tm.tm_min &&
-        maintenance_flag)
+    if (0 == tm.tm_hour && 0 == tm.tm_min)
     {
-      if (ERR_CODE ==
-          maintenance(&multiplexing_thread,
-                      &udp_thread, argc, path_xml))
-        error("maintenance() failed");
-      maintenance_flag = false;
+      if (maintenance_flag)
+      {
+        printf("maintenance started.\n");
+        if (ERR_CODE ==
+            maintenance(&multiplexing_thread,
+                        &udp_thread, argc, path_xml))
+          error("maintenance() failed\n");
+        else
+          printf("maintenance finished.\n\n");
+        maintenance_flag = false;
+      }
     }
     else
       maintenance_flag = true;
@@ -357,7 +362,7 @@ bool running_condition()
 /* even though clients are not served at this time
  * if something goes wrong here,
  * the server shouldn't stop
- * DOES NOT provide error message
+ * provides error message for restarting threads
  * returns the count of routes newly accessed
  */
 int maintenance(pthread_t *th0, pthread_t *th1,
@@ -394,13 +399,13 @@ int maintenance(pthread_t *th0, pthread_t *th1,
       strcpy(path_xml, path_stable);
   }
   read_xml(path_xml);
+  call(printf("%d routes are valid.\n", count_routes));
 
   // restart threads
-  if (pthread_create(th0, NULL,
-                     &multiplexing, NULL) ||
-      pthread_create(th0, NULL,
-                     &udp_communication, NULL))
-    return ERR_CODE;
+  call0(pthread_create(th0, NULL,
+                       &multiplexing, NULL));
+  call0(pthread_create(th0, NULL,
+                       &udp_communication, NULL));
 
   // restart serving clients
   key = '1'; // security--

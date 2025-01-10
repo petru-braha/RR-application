@@ -1,9 +1,6 @@
 ### to do
 
-0. better names/identation/scoping/messages
-
-<br>
-
+0. better names/function length
 0. conc_serv
 0. cpp rate
 0. change time after an ip address becomes available again after closing server
