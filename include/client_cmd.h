@@ -168,7 +168,12 @@ argument_validation1(const char *const buffer,
             strtoul(buffer, &condition, number_base);
         if ('\0' != *condition)
             return 0;
-        if(number >= UCHAR_MAX)
+        if (0 == number)
+        {
+            warning("invalid report");
+            return 0;
+        }
+        if (number >= UCHAR_MAX)
         {
             warning("a train can be at most 180 minutes late");
             return 0;

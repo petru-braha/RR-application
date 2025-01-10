@@ -24,16 +24,16 @@
 #include "../include/route.h"
 #include "../include/shared.h"
 
-const char *const path_location =
-    "../include/data/location.txt";
-
-//------------------------------------------------
+#define path_location "../include/data/location.txt"
 
 int sd_tcp, sd_udp;
 struct sockaddr_in skadd_server;
 
 //------------------------------------------------
 
+static void exit_client(const int status);
+
+// four procedures
 static ssize_t recv_command(unsigned char *const command,
                             unsigned short *const argument0,
                             unsigned short *const argument1);
@@ -43,26 +43,18 @@ ssize_t send_command(const unsigned char command,
 ssize_t recv_outcome(const unsigned char command,
                      unsigned short *const argument0,
                      struct rr_route *const data);
-static ssize_t print_data(const unsigned char command,
-                          const unsigned short argument0,
-                          const struct rr_route *const data);
+static int print_data(const unsigned char command,
+                      const unsigned short argument0,
+                      const struct rr_route *const data);
 
 //------------------------------------------------
-
-static void exit_client(const int status)
-{
-  call(close(sd_tcp));
-  call(close(sd_udp));
-  exit(status);
-}
 
 int main(int argc, char *argv[])
 {
   // base case
-  if (argc != 3)
+  if (3 != argc)
   {
-    // no call required it is already a failing case
-    printf("syntax: <ip address> <port>.\n");
+    warning("syntax: <ip address> <port>");
     return EXIT_FAILURE;
   }
 
@@ -77,12 +69,12 @@ int main(int argc, char *argv[])
                sizeof(struct sockaddr)));
   // udp
   sd_udp = socket(AF_INET, SOCK_DGRAM, 0);
-  if (-1 == sd_udp ||
-      -1 == connect(sd_udp,
-                    (struct sockaddr *)&skadd_server,
-                    sizeof(struct sockaddr)))
+  if (ERR_CODE == sd_udp ||
+      ERR_CODE == connect(sd_udp,
+                          (struct sockaddr *)&skadd_server,
+                          sizeof(struct sockaddr)))
   {
-    call(close(sd_tcp));
+    close(sd_tcp);
     error("socket() failed - tcp success, udp failure");
     return EXIT_FAILURE;
   }
@@ -95,10 +87,11 @@ int main(int argc, char *argv[])
   // command loop
   for (; TCP_CODE_Q != command;)
   {
+    // no call procedures - errors are checked inside
     recv_command(&command, &argument0, &argument1);
     send_command(command, argument0, argument1);
     recv_outcome(command, &argument0, outcome);
-    print_data(command, argument0, outcome);
+    call(print_data(command, argument0, outcome));
   }
 
   exit_client(EXIT_SUCCESS);
@@ -199,19 +192,18 @@ recv_command(unsigned char *const command,
 // sends four bytes
 ssize_t send_tcp(const unsigned char command,
                  const unsigned short argument0,
-                 const unsigned short argument1)
+                 const unsigned char argument1)
 {
   ssize_t bytes = write_all(sd_tcp, &command,
                             sizeof(command));
   bytes += write_all(sd_tcp, &argument0,
                      sizeof(argument0));
-  bytes += write_all(sd_tcp,
-                     (unsigned char *)&argument1,
-                     sizeof(unsigned char));
+  bytes += write_all(sd_tcp, &argument1,
+                     sizeof(argument1));
 
-  if (errno || bytes < 1)
+  if (errno || 4 != bytes)
   {
-    error("server disconnected while sending command");
+    error("send_tcp() failed - server disconnected");
     if (ECONNRESET != errno && errno)
       error(strerror(errno));
     exit_client(errno);
@@ -226,7 +218,8 @@ ssize_t send_command(const unsigned char command,
 {
   // tcp communication if the client sends data
   if (TCP_CODE_R == command || TCP_CODE_Q == command)
-    return send_tcp(command, argument0, argument1);
+    return send_tcp(command, argument0,
+                    (unsigned char)argument1);
 
   // udp communication if queries
   // sends three bytes
@@ -250,9 +243,9 @@ ssize_t recv_tcp(const unsigned char command,
   ssize_t bytes = read_all(sd_tcp, &temp,
                            sizeof(temp));
 
-  if (errno || bytes != 1)
+  if (errno || sizeof(temp) != bytes)
   {
-    error("server disconnected while receiving output");
+    error("recv_tcp() failed - server disconnected");
     if (ECONNRESET != errno && errno)
       error(strerror(errno));
     exit_client(errno);
@@ -271,7 +264,7 @@ ssize_t recv_outcome(const unsigned char command,
 
   socklen_t length = sizeof(skadd_server);
   ssize_t bytes = recvfrom(sd_udp, argument0,
-                           sizeof(unsigned short), NO_FLAG,
+                           sizeof(*argument0), NO_FLAG,
                            (struct sockaddr *)&skadd_server,
                            &length);
   bytes += recvfrom(sd_udp, data,
@@ -280,9 +273,9 @@ ssize_t recv_outcome(const unsigned char command,
                     (struct sockaddr *)&skadd_server,
                     &length);
 
-  if (-1 == bytes)
+  if (ERR_CODE == bytes)
   {
-    error("server disconnected while receiving output");
+    error("recv_udp() failed - server disconnected");
     if (ECONNRESET != errno && errno)
       error(strerror(errno));
     exit_client(errno);
@@ -291,37 +284,39 @@ ssize_t recv_outcome(const unsigned char command,
   return bytes;
 }
 
-static ssize_t print_data(const unsigned char command,
-                          const unsigned short argument0,
-                          const struct rr_route *const data)
+static int print_data(const unsigned char command,
+                      const unsigned short argument0,
+                      const struct rr_route *const data)
 {
   if (TCP_CODE_R == command)
   {
     if (RECV_FAIL == argument0)
-      printf("reporting failed.\n");
-    else
-      printf("reporting succeeded.\n");
-    return sizeof(unsigned char);
+      return printf("reporting failed.\n");
+    return printf("reporting succeeded.\n");
   }
 
   if (TCP_CODE_Q == command)
   {
     if (RECV_FAIL == argument0)
-      printf("quiting failed to fetch with server.\n");
-    else
-      printf("quiting succeeded.\n");
-    return sizeof(unsigned char);
+      return printf("quiting failed to fetch with server.\n");
+    return printf("quiting succeeded.\n");
   }
 
   if (NULL == data && argument0)
-  {
-    error("print_data() failed - null data");
-    return -1;
-  }
+    return ERR_CODE;
 
-  // UDP commands
   printf("%d routes received.\n", argument0);
   for (unsigned short i = 0; i < argument0; i++)
     client_print(data[i], path_location);
   return argument0 * sizeof(struct rr_route);
+}
+
+//------------------------------------------------
+
+static void exit_client(const int status)
+{
+  if (ERR_CODE == close(sd_tcp) ||
+      ERR_CODE == close(sd_udp))
+    error("close() failed");
+  exit(status);
 }

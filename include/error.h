@@ -33,26 +33,4 @@
         exit(EXIT_FAILURE);                                        \
     }
 
-#define call_noexit(x)                              \
-    if (x < 0)                                      \
-    {                                               \
-        printf("line %d error: ", __LINE__);        \
-        print_function_name(x);                     \
-        printf(" failed - %s.\n", strerror(errno)); \
-        errno = 0;                                  \
-    }
-
-#define call_noblock(x)                                 \
-    if (x < 0)                                          \
-    {                                                   \
-        if (EWOULDBLOCK != errno)                       \
-        {                                               \
-            printf("line %d error: ", __LINE__);        \
-            print_function_name(x);                     \
-            printf(" failed - %s.\n", strerror(errno)); \
-            exit(EXIT_FAILURE);                         \
-        }                                               \
-        errno = 0;                                      \
-    }
-
 #endif

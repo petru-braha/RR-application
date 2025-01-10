@@ -3,6 +3,12 @@
         <location_departure> 0 </location_departure>
         <location_arrival> 1 </location_arrival>
         <time_departure> 580 </time_departure>
-        <time_arrival> 610 </time_arrival>
+        <time_arrival> 1200 </time_arrival>
+    </route>
+    <route>
+        <location_departure> 0 </location_departure>
+        <location_arrival> 1 </location_arrival>
+        <time_departure> 0 </time_departure>
+        <time_arrival> 60 </time_arrival>
     </route>
 </schedule>

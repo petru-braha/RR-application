@@ -139,6 +139,7 @@ int read_xml(const char *const path)
     return EXIT_SUCCESS;
 }
 
+// takes a path of the file to be read
 int test_xml(const char *const path)
 {
     xmlDocPtr document = xmlParseFile(path);

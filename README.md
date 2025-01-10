@@ -2,79 +2,49 @@
 
 You can find the romanian version of this document [here](./docs/README_RO.md).
 
-## Main files
+## Usage
 
+- official documentation is avaible [here](./docs/rr_raport.pdf)
 - [client application](./client.c)
 - [server application](./server.c)
-- [official documentation](./docs/rr_raport.pdf)
 
-## The communication protocol
+## Technologies
 
-0. [id_train, time_departure_estimated, time_arrival_estimated, status] routes(location_departure, location_arrival)
-1. [id_train, time_departure_confirmed, location_arrival] departures(location_departure)
-2. [id_train, time_arrival_confirmed, location_departure] arrivals(location_arrival)
-3. void report(id_train, minutes)
-4. void quit()
+- C - socket(), bind(), connect(), pthread_t
+- C++ - std::mt1337
+- libxml2
 
-- function synopsis: return_type name_function parameter(s)
-- estimated times = initial times defined by the generated schedule
-- confirmed times = estimated times +/- delays (depends if the train arrives earlier or later)
+## Features
 
-## Description
+### The communication protocol
 
-- locations types
-    - departures
-    - arrivals
+Please consult some definitions from [here](./docs/brainstorm.md)
 
-- times types
-    - confirmed departure time
-    - estimated departure time
-    - confirmed arrival time
-    - estimated arrival time
+- [id_train, time_departure, time_arrival, status] routes(location_departure, location_arrival)
+- [id_train, time_departure, location_arrival] departures(location_departure)
+- [id_train, time_arrival, location_departure] arrivals(location_arrival)
+- bool report(id_train, minutes)
+- bool quit()
 
-- the time of the application is the current Romania time.
-- an itinerary is from point A to point B and no other points exists between these two.
-- client's main() function takes ip address and the port as arguments. it approach simulates real connections between different sides. hard coding the connection of a client for a specific server is more suggestive, but less clever.
-
-## Implementation
-
-0. correctness
-
-- client uses tcp to server when sending data
-- client uses udp to server when sending queries
-- server uses tcp to client when sending data
-
-<br>
-
-1. speed
+### Speed
 	
 - prethreaded execution
 - create thread for each client
 - i/o multiplexing with non-blocking calls
 
-<br>
-
-2. security
+### Security
 
 - specific procedures for possible errors
 - solution if one party stops responding
 - second end of the server
 
-## To do
+### Correctness
 
-- the server shouldn't shut down during loop if errors occur
-- [ideas](./docs/brainstorm.md)
-- change time after an ip address becomes available again after closing server
+- client uses tcp to server when sending data
+- client uses udp to server when sending queries
+- server uses tcp to client when sending data
 
-<br>
+## Limitations
 
-- raport: TDD, security if party crashes
-- raport: timed experiment - see conc_serv
-- raport: limitations (introduction), scenarios in conclusions
-- increase safety with two running servers: one on my computer, one on the faculty's server, every update on the main server will tcp its way to the second one
-
-<br>
-
-- overcome the only 1024 clients at once limitation
-- windows portability
-- endianess portability
+- only 1024 users can be connected at once
+- not Windows portable

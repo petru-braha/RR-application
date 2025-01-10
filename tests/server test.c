@@ -28,38 +28,34 @@
 #include "../include/server_xml.h"
 #include "../include/server_api.h"
 
-const char *const path_thread =
-    "../include/dev/key.txt";
-const char *const path_binary =
-    "../include/dev/write_xml";
-const char *const name_random =
-    "random schedule.xml";
-const char *const path_to_build =
-    "../include/data/";
+#define path_thread "../include/dev/key.txt"
+#define path_binary "../include/dev/write_xml"
+#define name_random "random schedule.xml"
+#define path_to_build "../include/data/"
 
 typedef struct
 {
     fd_set container;
     int count;
 } rr_fd;
-
 rr_fd descriptors;
-
-int sd_udp = -1;
+int sd_udp;
 
 //------------------------------------------------
 
 void check_xml(int *argc, char *argv[],
                char *const path_xml);
 bool running_condition();
-void maintenance(pthread_t *th0, pthread_t *th1,
-                 const int argc,
-                 const char *const path_xml);
+int maintenance(pthread_t *th0, pthread_t *th1,
+                const int argc,
+                const char *const path_xml);
 
-// 3 threads
+// three threads
 void *udp_communication(void *);
 void *multiplexing(void *);
 int main(int argc, char *argv[]);
+
+//------------------------------------------------
 
 int main(int argc, char *argv[])
 {
@@ -123,15 +119,17 @@ int main(int argc, char *argv[])
         if (0 == tm.tm_hour && 0 == tm.tm_min &&
             maintenance_flag)
         {
-            maintenance(&multiplexing_thread,
-                        &udp_thread, argc, path_xml);
+            if (ERR_CODE ==
+                maintenance(&multiplexing_thread,
+                            &udp_thread, argc, path_xml))
+                error("maintenance() failed");
             maintenance_flag = false;
         }
         else
             maintenance_flag = true;
 
-        // error check
-        if (0 != errno)
+        // additional error check
+        if (errno)
         {
             warning(strerror(errno));
             errno = 0;
@@ -139,10 +137,17 @@ int main(int argc, char *argv[])
 
         // accepted client
         int sd_client = accept(sd_listen, NULL, NULL);
-        call_noblock(sd_client);
-        if (-1 == sd_client)
+        if (errno && EWOULDBLOCK != errno)
+            error(strerror(errno));
+        errno = 0;
+        if (ERR_CODE == sd_client)
             continue;
-        call(ioctl(sd_client, FIONBIO, &option));
+        if (ERR_CODE == ioctl(sd_client, FIONBIO, &option))
+        {
+            error(strerror(errno));
+            errno = 0;
+            continue;
+        }
 
         // sets
         FD_SET(sd_client, &descriptors.container);
@@ -151,11 +156,15 @@ int main(int argc, char *argv[])
     }
 
     // the server closes, an admin key was used
+    // using call() is now accepted
     call0(pthread_join(multiplexing_thread, NULL));
     call0(pthread_join(udp_thread, NULL));
     for (int fd = 0; fd < descriptors.count; fd++)
         if (FD_ISSET(fd, &descriptors.container))
-            call(printf("warning: %d is not closed.\n", fd));
+        {
+            warning("not closed socket");
+            close(fd);
+        }
 
     call(close(sd_listen));
     call(close(sd_udp));
@@ -179,15 +188,12 @@ void *udp_communication(void *)
                      (struct sockaddr *)&skaddr_client,
                      &length);
 
-        if (-1 == bytes)
+        if (ERR_CODE == bytes)
         {
-            if (EWOULDBLOCK == errno)
-            {
-                errno = 0;
-                continue;
-            }
-            else
-                call_var(-1);
+            if (EWOULDBLOCK != errno)
+                error("recvfrom() failed");
+            errno = 0;
+            continue;
         }
 
         struct rr_route data[COUNT_ROUTES_MAX];
@@ -225,7 +231,8 @@ void *tcp_communication(const int sd)
             error(strerror(errno));
 
         FD_CLR(sd, &descriptors.container);
-        call(close(sd));
+        if (ERR_CODE == close(sd))
+            error("close() failed");
         errno = 0;
         return NULL;
     }
@@ -240,7 +247,8 @@ void *tcp_communication(const int sd)
             error(strerror(errno));
 
         FD_CLR(sd, &descriptors.container);
-        call(close(sd));
+        if (ERR_CODE == close(sd))
+            error("close() failed");
         errno = 0;
         return NULL;
     }
@@ -248,7 +256,8 @@ void *tcp_communication(const int sd)
     if (TCP_CODE_Q == command)
     {
         FD_CLR(sd, &descriptors.container);
-        call(close(sd));
+        if (ERR_CODE == close(sd))
+            error("close() failed");
     }
 
     return NULL;
@@ -267,7 +276,8 @@ void *multiplexing(void *)
             select(descriptors.count, &tcp_fd,
                    NULL, NULL, &TV);
 
-        call_var(count_selected);
+        if (ERR_CODE == count_selected)
+            error("select() failed");
         for (int sd = 4;
              sd < descriptors.count &&
              count_selected;
@@ -316,41 +326,56 @@ void check_xml(int *argc, char *argv[],
     write_xml(path_binary);
 }
 
-// a server should always be online
+/* a server should always be online
+ * this should always return true
+ * provides error messages
+ */
 bool running_condition()
 {
-    int fd = open(path_thread, O_RDONLY);
-    call_var(fd);
-
     char key = '0';
-    call(read(fd, &key, 1));
-    call(close(fd));
+    int fd = open(path_thread, O_RDONLY);
+    if (ERR_CODE == fd ||
+        ERR_CODE == read_all(fd, &key, sizeof(key)) ||
+        ERR_CODE == close(fd))
+    {
+        error("running_condition() failed");
+        return false;
+    }
 
     return '1' == key;
 }
 
-void maintenance(pthread_t *th0, pthread_t *th1,
-                 const int argc,
-                 const char *const path_xml)
+/* even though clients are not served at this time
+ * if something goes wrong here,
+ * the server shouldn't stop
+ * DOES NOT provide error message
+ * returns the count of routes newly accessed
+ */
+int maintenance(pthread_t *th0, pthread_t *th1,
+                const int argc,
+                const char *const path_xml)
 {
     if (NULL == th0 || NULL == th1 || NULL == path_xml)
-    {
-        warning("maintenance() failed - received null");
-        return;
-    }
+        return ERR_CODE;
 
     // stop serving clients
-    int fd = open(path_thread, O_WRONLY);
-    call_var(fd);
     char key = '0'; // security--
-    call(write(fd, &key, sizeof(key)));
-    call(close(fd));
+    int fd = open(path_thread, O_WRONLY);
+    if (ERR_CODE == fd ||
+        sizeof(key) != write_all(fd, &key, sizeof(key)) ||
+        ERR_CODE == close(fd))
+        return ERR_CODE;
 
-    call0(pthread_join(*th0, NULL));
-    call0(pthread_join(*th1, NULL));
+    if (pthread_join(*th0, NULL) ||
+        pthread_join(*th1, NULL))
+        return ERR_CODE;
+
     for (int fd = 0; fd < descriptors.count; fd++)
         if (FD_ISSET(fd, &descriptors.container))
-            call(printf("warning: %d is not closed.\n", fd));
+        {
+            warning("not closed socket");
+            close(fd);
+        }
 
     // check the new schedule for today
     if (1 == argc)
@@ -358,15 +383,20 @@ void maintenance(pthread_t *th0, pthread_t *th1,
     read_xml(path_xml);
 
     // restart threads
-    call0(pthread_create(th0, NULL,
-                         &multiplexing, NULL));
-    call0(pthread_create(th0, NULL,
-                         &udp_communication, NULL));
+    if (pthread_create(th0, NULL,
+                       &multiplexing, NULL) ||
+        pthread_create(th0, NULL,
+                       &udp_communication, NULL))
+        return ERR_CODE;
 
     // restart serving clients
-    fd = open(path_thread, O_WRONLY);
-    call_var(fd);
     key = '1'; // security--
-    call(write(fd, &key, sizeof(key)));
-    call(close(fd));
+    fd = open(path_thread, O_WRONLY);
+    if (ERR_CODE == fd ||
+        sizeof(key) != write_all(fd, &key, sizeof(key)) ||
+        ERR_CODE == close(fd))
+        return ERR_CODE;
+
+    // success
+    return count_routes;
 }

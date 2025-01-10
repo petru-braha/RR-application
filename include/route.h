@@ -41,7 +41,7 @@ struct rr_route
 void set_last(struct rr_route *r)
 {
     if (NULL == r)
-        warning("set_last() failed - null pointer");
+        warning("set_last() failed - null argument");
 
     r->departure_data = USHRT_MAX;
     r->arrival_data = USHRT_MAX;

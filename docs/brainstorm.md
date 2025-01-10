@@ -1,21 +1,57 @@
 ### to do
 
+0. client input validation - departures arrivals - see protocol
 0. improve upon client input validation
 0. more test cases
 0. better names/identation/scoping/messages
+
+<br>
+
 0. conc_serv
 0. cpp rate
+0. change time after an ip address becomes available again after closing server
+0. faculty running server
 
-### assumptions
+<br>
+
+0. raport: TDD, security if party crashes
+0. raport: timed experiment - see conc_serv
+0. raport: limitations (introduction), scenarios in conclusions
+
+### definition
+
+- locations types
+    - departures
+    - arrivals
+
+- times types
+    - confirmed departure time
+    - estimated departure time
+    - confirmed arrival time
+    - estimated arrival time
+
+- function synopsis: return_type name_function parameter(s)
+- estimated times = initial times defined by the generated schedule
+- confirmed times = estimated times +/- delays (depends if the train arrives earlier or later)
 
 - set == encode == encrypt
 - get == decode == decrpyt
-- 
 
-### disconnection
+- error 
+    - must be interpreted by the developer
+    - a user won't get an error, if that would be the case he must read the documentation or address to the developer
+    - includes details like scope, line, function name, why it didn't work
+    - messages about internal operations
+- warning
+    - must be interpreted by the user - client.c
+    - must be interpreted by the server administrator - server.c
+    - includes just a simple instruction, nothing more
+    - messages about invalid input arguments - client.c
+    - messages about unexpected not treated events, but not errors - server.c
 
-- client disconnects during operation => server warning
-- server shutdowns during operation => close clients
+- the time of the application is the current Romania time.
+- an itinerary is from point A to point B and no other points exists between these two.
+- client's main() function takes ip address and the port as arguments. it approach simulates real connections between different sides. hard coding the connection of a client for a specific server is more suggestive, but less clever.
 
 ### data encoding
 
@@ -28,17 +64,22 @@
     - still minimal as possible
     - the client application will decrypt the data in the most clever way possible
 
-- itinerary is a singleton
-- multiple routes can have the same itinerary
-- 820 total possible itineraries
-- 1440 total possible times
-- status will be encoded in departure location in the following way
-- 57600 - 1440 * 41
-- (57600, 65536)
+- 820 total possible different routes itineraries
+- 1440 total possible different times
 
-- approximate
-- change to location * time and add extra field for late
-- change to location * server store late - bad : no flag
+- an rr_route has
+    - departure_data - 2 bytes
+    - arrival_data - 2 bytes
+    - delay_data - 1 bytes
+- this design of a rr_route has multiple advantages
+    - minimal - sizeof(struct rr_route) == 6 bytes
+    - if in the future developement another unsigned char field will be necessary, sizeof won't change
+    - O(1) data retriving
+- departure_data = departure_time * 41 + departure_location (same for arrival_data)
+    - 41 == COUNT_LOCATION
+    - retrieving the location is simple: departure_location == departure_data % 41
+    - retrieving the time is simple: departure_time == departure_data / 41
+    - this design allowed the same amount of information but in a compressed manner
 
 ### command encoding 
 
@@ -46,6 +87,8 @@
 - UDP commands belongs to [250, 255]
 - TCP commands belongs to [5, 10]
 - we will avoid 0 and 1 - too common interpretations
+
+- this design allow us to include more commands in future development
 
 | code | command    |
 |:----:|:----------:|
@@ -55,9 +98,17 @@
 | 5    | report     |
 | 6    | quit       |
 
+### decisions
+
+- printf/printing operations should be covered by call() statements - their failure is a matter of interest for the developer, not for user
+- after the server starts the loop no fatal errors should be defined - even if something does not go as expected, the server must continue in serving clients no matter what operation failed; if something too bad will happen the kernel itself will stop the process
+
 ### random ideas
 
 - weird identation? doing so you can see two files at once on your IDE
 - all errno numbers: /usr/include/asm-generic/errno.h
 - if the server has problems with clients, it won't shut down; instead the clients will be forced to restart the connection
 - useful function witch doesn't work: xmlKeepBlanksDefault();
+
+- client disconnects during operation => server warning
+- server shutdowns during operation => close clients

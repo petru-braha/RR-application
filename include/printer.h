@@ -26,7 +26,7 @@ void repair(unsigned char *const buffer)
 {
   if (NULL == buffer)
   {
-    error("repair() failed - null buffer");
+    error("repair() failed - null argument");
     return;
   }
 
