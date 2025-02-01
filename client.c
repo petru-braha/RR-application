@@ -1,7 +1,7 @@
 /* comments:
  * client.c - requests-sending application
  * author - Braha Petru Bogdan - <petrubraha@gmail.com> (c)
- * compilation command: gcc client.c -o cl
+ * compilation command: gcc -std=c11 client.c -o cl
  * run command example: ./cl 127.0.0.1 2970
  * run command example: ./cl 10.100.0.30 2970
  */
@@ -127,7 +127,7 @@ recv_command(unsigned char *const command,
        RETRY_ARGUMENT == *argument0 ||
        RETRY_ARGUMENT == *argument1;)
   {
-    explicit_bzero(buffer, BYTES_COMMAND_MAX);
+    memset(buffer, 0, BYTES_COMMAND_MAX);
     char *string = buffer;
     printf("your command: ");
     fflush(stdout);

@@ -1,7 +1,7 @@
 /* comments:
  * write_xml.cpp - a route random generator application
  * author - Braha Petru Bogdan - <petrubraha@gmail.com> (c)
- * compilation command: g++ include/dev/write_xml.cpp -I/usr/include/libxml2 -lxml2 -o include/dev/write_xml
+ * compilation command: g++ -std=c++11 include/dev/write_xml.cpp -I/usr/include/libxml2 -lxml2 -o include/dev/write_xml
  */
 
 #include <stdio.h>

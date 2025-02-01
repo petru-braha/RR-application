@@ -12,7 +12,7 @@ You can find the romanian version of this document [here](./docs/README_RO.md).
 
 - C - socket(), bind(), connect(), pthread_t
 - C++ - std::mt1337
-- libxml2
+- libxml2 - [official page](https://gitlab.gnome.org/GNOME/libxml2)
 
 ## Features
 

@@ -1,5 +1,7 @@
 ### to do
 
+0. portability, pthread_t (windows), without xml (old linux) (libraries are ok on faculty's server)
+0. xml lib installer
 0. better names/function length
 0. conc_serv
 0. cpp rate
