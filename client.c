@@ -37,22 +37,25 @@ struct sockaddr_in skadd_server;
 static void exit_client(const int status);
 
 // four procedures
-static ssize_t
-recv_command(unsigned char *const command,
-             unsigned short *const argument0,
-             unsigned short *const argument1);
-ssize_t
-send_command(const unsigned char command,
-             const unsigned short argument0,
-             const unsigned short argument1);
-ssize_t
-recv_outcome(const unsigned char command,
-             unsigned short *const argument0,
-             struct rr_route *const data);
-static int
-print_data(const unsigned char command,
-           const unsigned short argument0,
-           const struct rr_route *const data);
+static ssize_t recv_command(
+    unsigned char *const command,
+    unsigned short *const argument0,
+    unsigned short *const argument1);
+
+ssize_t send_command(
+    const unsigned char command,
+    const unsigned short argument0,
+    const unsigned short argument1);
+
+ssize_t recv_outcome(
+    const unsigned char command,
+    unsigned short *const argument0,
+    struct rr_route *const data);
+
+static int print_data(
+    const unsigned char command,
+    const unsigned short argument0,
+    const struct rr_route *const data);
 
 //------------------------------------------------
 
@@ -77,9 +80,10 @@ int main(int argc, char *argv[])
   // udp
   sd_udp = socket(AF_INET, SOCK_DGRAM, 0);
   if (ERR_CODE == sd_udp ||
-      ERR_CODE == connect(sd_udp,
-                          (struct sockaddr *)&skadd_server,
-                          sizeof(struct sockaddr)))
+      ERR_CODE == connect(
+                      sd_udp,
+                      (struct sockaddr *)&skadd_server,
+                      sizeof(struct sockaddr)))
   {
     close(sd_tcp);
     error("socket() failed - tcp success, udp failure");
@@ -112,10 +116,10 @@ int main(int argc, char *argv[])
 /* each command has at most two arguments
  * provides error messages
  */
-static ssize_t
-recv_command(unsigned char *const command,
-             unsigned short *const argument0,
-             unsigned short *const argument1)
+static ssize_t recv_command(
+    unsigned char *const command,
+    unsigned short *const argument0,
+    unsigned short *const argument1)
 {
   ssize_t bytes = 0;
   char buffer[BYTES_COMMAND_MAX];
@@ -179,9 +183,10 @@ recv_command(unsigned char *const command,
 // sending
 
 // sends four bytes
-ssize_t send_tcp(const unsigned char command,
-                 const unsigned short argument0,
-                 const unsigned char argument1)
+ssize_t send_tcp(
+    const unsigned char command,
+    const unsigned short argument0,
+    const unsigned char argument1)
 {
   ssize_t bytes = write_all(sd_tcp, &command,
                             sizeof(command));
@@ -201,9 +206,10 @@ ssize_t send_tcp(const unsigned char command,
   return bytes;
 }
 
-ssize_t send_command(const unsigned char command,
-                     const unsigned short argument0,
-                     const unsigned short argument1)
+ssize_t send_command(
+    const unsigned char command,
+    const unsigned short argument0,
+    const unsigned short argument1)
 {
   // tcp communication if the client sends data
   if (TCP_CODE_R == command || TCP_CODE_Q == command)
@@ -273,9 +279,10 @@ ssize_t recv_outcome(const unsigned char command,
   return bytes;
 }
 
-static int print_data(const unsigned char command,
-                      const unsigned short argument0,
-                      const struct rr_route *const data)
+static int print_data(
+    const unsigned char command,
+    const unsigned short argument0,
+    const struct rr_route *const data)
 {
   if (TCP_CODE_R == command)
   {

@@ -1,11 +1,14 @@
+#ifndef _00GENERATE00_
 #ifndef _00FILES00_
 #define _00FILES00_
 
+#include <stdlib.h>
 #include <sys/wait.h>
 #include <sys/types.h>
 #include <unistd.h>
 #include <string.h>
 
+#include <libxml2/libxml/xmlversion.h>
 #include <libxml2/libxml/xmlmemory.h>
 #include <libxml2/libxml/parser.h>
 #include <libxml2/libxml/tree.h>
@@ -164,4 +167,5 @@ int test_xml(const char *const path)
     return EXIT_SUCCESS;
 }
 
+#endif
 #endif

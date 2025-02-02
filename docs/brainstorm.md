@@ -1,7 +1,6 @@
 ### to do
 
 0. portability, pthread_t (windows), without xml (old linux) (libraries are ok on faculty's server)
-0. xml lib installer
 0. better names/function length
 0. conc_serv
 0. cpp rate
@@ -107,6 +106,10 @@
 - after the server starts the loop no fatal errors should be defined - even if something does not go as expected, the server must continue in serving clients no matter what operation failed; if something too bad will happen the kernel itself will stop the process
 
 - the identation pattern used may be weird but helps in visualising multiple files from this project in a IDE
+
+- struct rr_route schedule[] was initially declared global in order to sync with the server_api.h; the new version "all server.c" follows the same model just to keep consistency between source code files.
+
+- in a server there should be defined either server_gen.h or server_xml.h but never both or none; this constraint is solved with include guards
 
 ### random ideas
 
