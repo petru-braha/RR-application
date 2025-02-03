@@ -25,44 +25,44 @@
 
 unsigned char get_location(const unsigned short data)
 {
-    return data % COUNT_LOCATION;
+  return data % COUNT_LOCATION;
 }
 
 unsigned short get_time(const unsigned short data)
 {
-    return data / COUNT_LOCATION;
+  return data / COUNT_LOCATION;
 }
 
 struct rr_route
 {
-    unsigned short id_train;
-    unsigned short departure_data;
-    unsigned short arrival_data;
-    unsigned char delay_data;
+  unsigned short id_train;
+  unsigned short departure_data;
+  unsigned short arrival_data;
+  unsigned char delay_data;
 };
 
 void set_last(struct rr_route *r)
 {
-    if (NULL == r)
-    {
-        warning("set_last() failed - null argument");
-        return;
-    }
+  if (NULL == r)
+  {
+    warning("set_last() failed - null argument");
+    return;
+  }
 
-    r->id_train = USHRT_MAX;
-    r->departure_data = USHRT_MAX;
-    r->arrival_data = USHRT_MAX;
-    r->delay_data = UCHAR_MAX;
+  r->id_train = USHRT_MAX;
+  r->departure_data = USHRT_MAX;
+  r->arrival_data = USHRT_MAX;
+  r->delay_data = UCHAR_MAX;
 }
 
 bool is_last_route(const struct rr_route r)
 {
-    if (USHRT_MAX == r.id_train &&
-        USHRT_MAX == r.departure_data &&
-        USHRT_MAX == r.arrival_data &&
-        UCHAR_MAX == r.delay_data)
-        return true;
-    return false;
+  if (USHRT_MAX == r.id_train &&
+      USHRT_MAX == r.departure_data &&
+      USHRT_MAX == r.arrival_data &&
+      UCHAR_MAX == r.delay_data)
+    return true;
+  return false;
 }
 
 #endif

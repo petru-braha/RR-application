@@ -16,13 +16,23 @@
 #include "error.h"
 #include "route.h"
 
-// takes a path of the binary file
-int write_xml(const char *const path,
-              const char *const path_location)
+// take path of the binary file
+int write_file(
+    const char *const path,
+    const char *const path_location);
+int test_xml(const char *const path);
+int read_xml(const char *const path);
+
+struct rr_route schedule[COUNT_ROUTES_MAX];
+unsigned short count_routes = 0;
+
+int write_file(
+    const char *const path,
+    const char *const path_location)
 {
   if (NULL == path || NULL == path_location)
   {
-    error("write_xml() failed - null path");
+    error("write_file() failed - null path");
     return EXIT_FAILURE;
   }
 
@@ -30,7 +40,7 @@ int write_xml(const char *const path,
   if (0 == process)
   {
     execl(path, path_location, NULL);
-    error("write_xml() failed - execv()");
+    error("write_file() failed - execl()");
     return EXIT_FAILURE;
   }
   else
@@ -41,16 +51,27 @@ int write_xml(const char *const path,
   }
 }
 
-struct rr_route schedule[COUNT_ROUTES_MAX];
-unsigned short count_routes = 0;
+int test_xml(const char *const path)
+{
+  xmlDocPtr document = xmlParseFile(path);
+  if (NULL == document)
+    return EXIT_FAILURE;
 
-// takes a path of the file to be read
+  xmlNodePtr route_node;
+  route_node = xmlDocGetRootElement(document)->xmlChildrenNode->next;
+  xmlFreeDoc(document);
+
+  if (NULL == route_node)
+    return EXIT_FAILURE;
+  return EXIT_SUCCESS;
+}
+
 int read_xml(const char *const path)
 {
   xmlDocPtr document = xmlParseFile(path);
   if (NULL == document)
   {
-    error("read_xml() failed - wrong path.\n");
+    error("read_xml() failed - wrong path");
     exit(EXIT_FAILURE);
   }
 
@@ -60,7 +81,7 @@ int read_xml(const char *const path)
                    ->xmlChildrenNode->next;
   if (NULL == route_node)
   {
-    error("read_xml() failed - invalid xml document.\n");
+    error("read_xml() failed - invalid xml document");
     xmlFreeDoc(document);
     exit(EXIT_FAILURE);
   }
@@ -142,28 +163,6 @@ int read_xml(const char *const path)
   set_last(&schedule[index_route]);
   count_routes = index_route;
   xmlFreeDoc(document);
-  return EXIT_SUCCESS;
-}
-
-// takes a path of the file to be read
-int test_xml(const char *const path)
-{
-  xmlDocPtr document = xmlParseFile(path);
-  if (NULL == document)
-  {
-    warning("read_xml() failed - wrong path.\n");
-    return EXIT_FAILURE;
-  }
-
-  xmlNodePtr route_node;
-  route_node = xmlDocGetRootElement(document)->xmlChildrenNode->next;
-  if (NULL == route_node)
-  {
-    warning("read_xml() failed - invalid xml document.\n");
-    xmlFreeDoc(document);
-    return EXIT_FAILURE;
-  }
-
   return EXIT_SUCCESS;
 }
 

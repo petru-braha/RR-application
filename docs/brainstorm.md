@@ -1,6 +1,6 @@
 ### to do
 
-0. portability, pthread_t (windows), without xml (old linux) (libraries are ok on faculty's server)
+0. windows portability
 0. better names/function length
 0. conc_serv
 
@@ -97,14 +97,18 @@
 | 5    | report     |
 | 6    | quit       |
 
-### random generation
+### random generation constraints
 
 - from each city there is at least a departure in one day
-- each city has at most 27 departures in one day
+    - each city has at most 27 departures in one day
+    - iasi cluj bucharest - higher probability for route generation
 - time is evaluated within [0, 1440] minutes interval
-- each route has between [2, 6] time alternatives
+    - each route has between [2, 6] time alternatives
+- there are no route cycles - starting and arriving in the same county is not possible
 
 ### decisions
+
+- file structure: includes typedefs classes functions variables main
 
 - printf/printing operations should be covered by call() statements - their failure is a matter of interest for the developer, not for user
 

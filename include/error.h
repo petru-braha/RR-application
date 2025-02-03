@@ -9,29 +9,29 @@
 
 #define print_function_name(x) printf("\"%s\"", #x)
 
-#define call(x)                                     \
-    if (x < 0)                                      \
-    {                                               \
-        printf("line %d error: ", __LINE__);        \
-        print_function_name(x);                     \
-        printf(" failed - %s.\n", strerror(errno)); \
-        exit(EXIT_FAILURE);                         \
-    }
+#define call(x)                                 \
+  if (x < 0)                                    \
+  {                                             \
+    printf("line %d error: ", __LINE__);        \
+    print_function_name(x);                     \
+    printf(" failed - %s.\n", strerror(errno)); \
+    exit(EXIT_FAILURE);                         \
+  }
 
-#define call0(x)                                    \
-    if (x != 0)                                     \
-    {                                               \
-        printf("line %d error: ", __LINE__);        \
-        print_function_name(x);                     \
-        printf(" failed - %s.\n", strerror(errno)); \
-        exit(EXIT_FAILURE);                         \
-    }
+#define call0(x)                                \
+  if (x != 0)                                   \
+  {                                             \
+    printf("line %d error: ", __LINE__);        \
+    print_function_name(x);                     \
+    printf(" failed - %s.\n", strerror(errno)); \
+    exit(EXIT_FAILURE);                         \
+  }
 
-#define call_var(x)                                                \
-    if (x < 0)                                                     \
-    {                                                              \
-        printf("line %d error: %s.\n", __LINE__, strerror(errno)); \
-        exit(EXIT_FAILURE);                                        \
-    }
+#define call_var(x)                                            \
+  if (x < 0)                                                   \
+  {                                                            \
+    printf("line %d error: %s.\n", __LINE__, strerror(errno)); \
+    exit(EXIT_FAILURE);                                        \
+  }
 
 #endif

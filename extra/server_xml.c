@@ -27,23 +27,14 @@
 #include "include/error.h"
 #include "include/printer.h"
 #include "include/route.h"
-#include "include/server_xml.h"
+#include "include/server_xml.h" //!
 #include "include/server_api.h"
-
-#define path_thread "include/dev/key.txt"
-#define path_stable "include/data/default schedule.xml"
-#define path_binary "include/dev/write_xml"
-#define name_random "random schedule.xml"
-#define path_to_build "include/data/"
-#define path_location "include/data/random schedule.xml"
 
 typedef struct
 {
   fd_set container;
   int count;
 } rr_fd;
-rr_fd descriptors;
-int sd_udp;
 
 //------------------------------------------------
 
@@ -58,6 +49,18 @@ int maintenance(pthread_t *th0, pthread_t *th1,
 void *udp_communication(void *);
 void *multiplexing(void *);
 int main(int argc, char *argv[]);
+
+//------------------------------------------------
+
+#define path_thread "include/dev/key.txt"
+#define path_stable "include/data/default schedule.xml"
+#define path_binary "include/dev/write_xml" //!
+#define name_random "random schedule.xml"
+#define path_to_build "include/data/"
+#define path_location "include/data/random schedule.xml"
+
+rr_fd descriptors;
+int sd_udp;
 
 //------------------------------------------------
 
@@ -129,7 +132,7 @@ int main(int argc, char *argv[])
         if (ERR_CODE ==
             maintenance(&multiplexing_thread,
                         &udp_thread, argc, path_xml))
-          error("maintenance() failed\n");
+          error("maintenance() failed");
         else
           printf("maintenance finished.\n\n");
         maintenance_flag = false;
@@ -309,7 +312,7 @@ void check_xml(int *argc, char *argv[],
 {
   if (*argc > 2)
   {
-    error("at most one xml file name is expected.\n");
+    error("at most one xml file name is expected");
     exit(EXIT_FAILURE);
   }
 
@@ -317,7 +320,7 @@ void check_xml(int *argc, char *argv[],
   {
     strcat(path_xml, name_random);
     if (EXIT_FAILURE ==
-        write_xml(path_binary, path_location))
+        write_file(path_binary, path_location))
       strcpy(path_xml, path_stable);
     return;
   }
@@ -336,7 +339,7 @@ void check_xml(int *argc, char *argv[],
   *argc = 1; // later generations
   strcat(path_xml, name_random);
   if (EXIT_FAILURE ==
-      write_xml(path_binary, path_location))
+      write_file(path_binary, path_location))
     strcpy(path_xml, path_stable);
 }
 
@@ -395,7 +398,7 @@ int maintenance(pthread_t *th0, pthread_t *th1,
   if (1 == argc)
   {
     if (EXIT_FAILURE ==
-        write_xml(path_binary, path_location))
+        write_file(path_binary, path_location))
       strcpy(path_xml, path_stable);
   }
   read_xml(path_xml);

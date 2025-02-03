@@ -27,11 +27,6 @@
 #include "include/route.h"
 #include "include/shared.h"
 
-#define path_location "include/data/location.txt"
-
-int sd_tcp, sd_udp;
-struct sockaddr_in skadd_server;
-
 //------------------------------------------------
 
 static void exit_client(const int status);
@@ -56,6 +51,14 @@ static int print_data(
     const unsigned char command,
     const unsigned short argument0,
     const struct rr_route *const data);
+
+int main(int argc, char *argv[]);
+
+//------------------------------------------------
+
+#define path_location "include/data/location.txt"
+int sd_tcp, sd_udp;
+struct sockaddr_in skadd_server;
 
 //------------------------------------------------
 

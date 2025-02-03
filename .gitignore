@@ -2,3 +2,7 @@
 **/cl
 **/sv
 **/*.out
+
+**/write_txt
+**/write_xml
+**/write_file
