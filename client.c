@@ -1,7 +1,7 @@
 /* comments:
  * client.c - requests-sending application
  * author - Braha Petru Bogdan - <petrubraha@gmail.com> (c)
- * compilation command: gcc -std=c11 client.c -o cl
+ * compilation command: gcc client.c -std=c11 -o cl
  * run command example: ./cl 127.0.0.1 2970
  * run command example: ./cl 10.100.0.30 2970
  */

@@ -1,7 +1,7 @@
 /* comments:
  * server.c - a concurrent server with i/o multiplexing, and two transport protocols
  * author - Braha Petru Bogdan - <petrubraha@gmail.com> (c)
- * compilation command: gcc server.c -std=c11 -I/usr/include/libxml2 -lxml2 -o sv
+ * compilation command: gcc server.c -std=c11 -pthread -I/usr/include/libxml2 -lxml2 -o sv
  * run command example: ./sv 'schedule.xml'
  * run command example: ./sv
  */

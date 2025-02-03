@@ -1,7 +1,7 @@
 /* comments:
  * server.c - a concurrent server with i/o multiplexing, and two transport protocols
  * author - Braha Petru Bogdan - <petrubraha@gmail.com> (c)
- * compilation command: gcc server.c -std=c11 -o sv
+ * compilation command: gcc server.c -std=c11 -pthread -o sv
  * run command example: ./sv 'schedule.txt'
  * run command example: ./sv
  */
@@ -72,7 +72,6 @@ int main(int argc, char *argv[])
   check_txt(&argc, argv, path_txt);
   read_txt(path_txt);
   call(printf("%d routes are valid.\n", count_routes));
-  exit(0);
 
   // server address
   const uint16_t port = 2970;
