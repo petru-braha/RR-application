@@ -1,4 +1,4 @@
-all:
+gen:
 	gcc -std=c11 client.c -o cl
 	cp extra/server_gen.c server.c
 	gcc -std=c11 server.c -o sv

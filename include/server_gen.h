@@ -4,15 +4,14 @@
 
 #include <stdlib.h>
 
-
 struct rr_route schedule[COUNT_ROUTES_MAX];
-size_t count_routes = 0;
+unsigned short count_routes = 0;
 
-size_t generate(struct rr_route* schedule)
+unsigned short generate(struct rr_route *schedule)
 {
-  size_t count_routes = 0;
-
-
+  unsigned short index_route = 0;
+  set_last(&schedule[index_route]);
+  count_routes = index_route;
 
   return count_routes;
 }

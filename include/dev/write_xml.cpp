@@ -11,32 +11,41 @@
 #include <libxml2/libxml/parser.h>
 
 #include "generator.hpp"
-#include "../route.h"
 
-using std::unordered_map;
-using std::vector;
+typedef unsigned short usht;
+
+struct ez_route
+{
+	usht departure_location = 0;
+	usht departure_time = 0;
+	usht arrival_location = 0;
+	usht arrival_time = 0;
+};
+
+int rate(const usht);
+void select_restriction(const usht, usht *const);
+void location_generation(std::vector<ez_route> &);
+void schedule_generation(std::vector<ez_route> &);
+void document_generation(const char *const);
+int main(int argc, char *argv[]);
+
+constexpr usht COUNT_ROUTES_MAX = 10000;
+constexpr usht COUNT_LOCATION = 41;
+constexpr usht BB = 0;
+constexpr usht CJ = 13;
+constexpr usht IS = 24;
+
+constexpr usht G_MINIMUM_CITY = 1;
+constexpr usht G_MAXIMUM_CITY =
+		COUNT_LOCATION * 2 / 3;
+
+constexpr usht G_MINIMUM_TIME = 0;
+constexpr usht G_MAXIMUM_TIME = 1440;
+
+constexpr usht G_MINIMUM_ALTV = 2;
+constexpr usht G_MAXIMUM_ALTV = 6;
 
 random_generator g;
-
-constexpr int BB = 0;
-constexpr int CJ = 13;
-constexpr int IS = 24;
-
-constexpr size_t G_MINIMUM_CITY = 1;
-constexpr size_t G_MAXIMUM_CITY =
-	COUNT_LOCATION * 2 / 3;
-
-constexpr size_t G_MINIMUM_TIME = 0;
-constexpr size_t G_MAXIMUM_TIME = 1440;
-
-constexpr size_t G_MINIMUM_ALTV = 2;
-constexpr size_t G_MAXIMUM_ALTV = 6;
-
-int rate(const size_t);
-void select(const size_t, size_t *const);
-void location_generation(std::vector<rr_route> &);
-void schedule_generation(std::vector<rr_route> &);
-void document_generation(const char *const);
 
 int main(int argc, char *argv[])
 {
@@ -47,8 +56,9 @@ int main(int argc, char *argv[])
 	}
 
 	const char *const path = argv[0];
-	size_t count_schedule = 0;
-	std::vector<rr_route> schedule(COUNT_LOCATION);
+	usht count_schedule = 0;
+	std::vector<ez_route> schedule;
+	schedule.reserve(COUNT_LOCATION);
 
 	location_generation(schedule);
 	schedule_generation(schedule);
@@ -72,42 +82,38 @@ int main(int argc, char *argv[])
 	}
 
 	xmlNewTextChild(root_node, NULL,
-					(const xmlChar *)"schedule",
-					(const xmlChar *)"0");
+									(const xmlChar *)"schedule",
+									(const xmlChar *)"0");
 	xmlNodePtr node =
-		root_node->xmlChildrenNode->next;
+			root_node->xmlChildrenNode->next;
 
-	for (size_t i = 0; i < schedule.size(); i++)
+	for (usht i = 0; i < schedule.size(); i++)
 	{
 		char buffer[10];
 
 		xmlNewTextChild(root_node, NULL,
-						(const xmlChar *)"route",
-						nullptr);
+										(const xmlChar *)"route",
+										nullptr);
 
-		sprintf(buffer, "%zu",
-				(size_t)get_location(schedule[i].departure_data));
+		sprintf(buffer, "%u", schedule[i].departure_location);
 		xmlNewTextChild(node, NULL,
-						(const xmlChar *)"location_departure",
-						(const xmlChar *)buffer);
+										(const xmlChar *)"location_departure",
+										(const xmlChar *)buffer);
 
-		sprintf(buffer, "%zu",
-				(size_t)get_location(schedule[i].arrival_data));
+		sprintf(buffer, "%u", schedule[i].arrival_location);
 		xmlNewTextChild(node, NULL,
-						(const xmlChar *)"location_arrival",
-						(const xmlChar *)buffer);
+										(const xmlChar *)"location_arrival",
+										(const xmlChar *)buffer);
 
-		sprintf(buffer, "%zu",
-				(size_t)get_time(schedule[i].departure_data));
+		sprintf(buffer, "%u", schedule[i].departure_time);
 		xmlNewTextChild(node, NULL,
-						(const xmlChar *)"time_departure",
-						(const xmlChar *)buffer);
+										(const xmlChar *)"time_departure",
+										(const xmlChar *)buffer);
 
-		sprintf(buffer, "%zu",
-				(size_t)get_time(schedule[i].arrival_data));
+		sprintf(buffer, "%u", schedule[i].arrival_time);
 		xmlNewTextChild(node, NULL,
-						(const xmlChar *)"time_arrival",
-						(const xmlChar *)buffer);
+										(const xmlChar *)"time_arrival",
+										(const xmlChar *)buffer);
 
 		node = node->next;
 	}
@@ -118,9 +124,9 @@ int main(int argc, char *argv[])
 	return EXIT_SUCCESS;
 }
 
-int rate(const size_t city)
+int rate(const usht city)
 {
-	size_t minimum = 0, maximum = COUNT_LOCATION / 2;
+	usht minimum = 0, maximum = COUNT_LOCATION / 2;
 	if (city == BB || city == IS || city == CJ)
 	{
 		minimum += 3;
@@ -130,103 +136,108 @@ int rate(const size_t city)
 	return g(minimum, maximum);
 }
 
-// randomly select count_index cities in linear time without repetition
-void select(const size_t count_index, size_t *const results)
+// the first element is invalid
+void select_restriction(const usht count_index, usht *const results)
 {
+	// base cases
 	if (nullptr == results)
-	{
-		printf("error: write_xml failed - select().\n");
-		exit(EXIT_FAILURE);
-	}
-
+		return;
 	if (count_index >= COUNT_LOCATION)
 		return;
 
-	size_t index_array[COUNT_LOCATION];
-	for (size_t i = 0; i < COUNT_LOCATION; i++)
+	// todo change to std::make_index_array
+	usht index_array[COUNT_LOCATION];
+	for (usht i = 0; i < COUNT_LOCATION; i++)
 		index_array[i] = i;
 
-	size_t it_index_array = 0;
-	for (; it_index_array < count_index; it_index_array++)
+	// be aware of the invalid element
+	const usht invalid = results[0];
+	index_array[invalid] = 0;
+	index_array[0] = invalid;
+
+	usht it_index_array = 1;
+	for (; it_index_array <= count_index; it_index_array++)
 	{
-		const size_t it_index_chosen =
-			g(it_index_array, count_index - 1);
-		const size_t answer = index_array[it_index_chosen];
+		const usht it_index_chosen =
+				g(it_index_array, COUNT_LOCATION - 1);
+		const usht answer = index_array[it_index_chosen];
 
 		index_array[it_index_chosen] =
-			index_array[it_index_array];
+				index_array[it_index_array];
 		index_array[it_index_array] = answer;
 
 		results[it_index_array] = answer;
 	}
 }
 
-void location_generation(std::vector<rr_route> &schedule)
+void location_generation(std::vector<ez_route> &schedule)
 {
-	unordered_map<int, vector<int>> locations;
-	for (size_t index_city = 0; index_city < COUNT_LOCATION; index_city++)
+	std::unordered_map<int, std::vector<int>> locations;
+	for (usht index_city = 0; index_city < COUNT_LOCATION; index_city++)
 	{
-		const size_t count_arrival_location = g(G_MINIMUM_CITY, G_MAXIMUM_CITY);
-		size_t arrival_location[COUNT_LOCATION]{};
-		for (size_t i = 0; i < count_arrival_location; i++)
+		// create index array from 0 to 40
+		const usht count_arrival_location = g(G_MINIMUM_CITY, G_MAXIMUM_CITY);
+		usht arrival_location[COUNT_LOCATION];
+		for (usht i = 0; i < count_arrival_location; i++)
 			arrival_location[i] = i;
-		select(count_arrival_location, arrival_location);
 
-		locations[index_city] = vector<int>();
-		for (size_t i = 0; i < count_arrival_location; i++)
+		// make sure there are no pair of the same number, e. g. 0 0
+		arrival_location[index_city] = 0;
+		arrival_location[0] = index_city;
+		select_restriction(count_arrival_location, arrival_location);
+		/*for (usht i = 1; i <= count_arrival_location; i++)
+			if (arrival_location[i] == index_city)
+				printf("bad %u \n", index_city);*/
+
+		// include the random results into locations
+		locations[index_city].reserve(count_arrival_location);
+		for (usht i = 1; i <= count_arrival_location; i++)
 			locations.at(index_city).emplace_back(arrival_location[i]);
 	}
 
-	schedule = std::vector<rr_route>();
-	for (size_t index_city = 0;
-		 index_city < COUNT_LOCATION &&
-		 schedule.size() < COUNT_ROUTES_MAX;
-		 index_city++)
-		for (size_t i_arrival = 0;
-			 i_arrival < locations.at(index_city).size() &&
+	for (usht index_city = 0;
+			 index_city < COUNT_LOCATION &&
 			 schedule.size() < COUNT_ROUTES_MAX;
-			 i_arrival++)
+			 index_city++)
+		for (usht i_arrival = 0;
+				 i_arrival < locations.at(index_city).size() &&
+				 schedule.size() < COUNT_ROUTES_MAX;
+				 i_arrival++)
 		{
-			rr_route route{0, 0, 0, 0};
-			route.departure_data = index_city;
-			route.arrival_data = locations.at(index_city).at(i_arrival);
+			ez_route route;
+			route.departure_location = index_city;
+			route.arrival_location = locations.at(index_city).at(i_arrival);
 			schedule.emplace_back(route);
 		}
 }
 
-void schedule_generation(std::vector<rr_route> &schedule)
+void schedule_generation(std::vector<ez_route> &schedule)
 {
-	size_t count_schedule = schedule.size();
-	size_t count_alternatives = g(G_MINIMUM_ALTV, G_MAXIMUM_ALTV);
-	size_t index_schedule_global = 0;
-	for (size_t index_route = 0;
-		 index_route < count_schedule &&
-		 schedule.size() < COUNT_ROUTES_MAX;
-		 index_route++)
+	usht count_schedule = schedule.size();
+	usht count_alternatives = g(G_MINIMUM_ALTV, G_MAXIMUM_ALTV);
+	usht index_schedule_local = 0;
+	for (usht index_route = 0;
+			 index_route < count_schedule &&
+			 schedule.size() < COUNT_ROUTES_MAX;
+			 index_route++)
 	{
-		schedule[index_route].departure_data +=
-			41 * (unsigned short)g(G_MINIMUM_TIME, G_MAXIMUM_TIME);
+		ez_route &ref = schedule[index_route];
+		ref.departure_time = g(G_MINIMUM_TIME, G_MAXIMUM_TIME);
+		ref.arrival_time = g(G_MINIMUM_TIME, G_MAXIMUM_TIME);
 
-		// arrival hour
-		schedule[index_route].arrival_data +=
-			41 * (unsigned short)g(G_MINIMUM_TIME, G_MAXIMUM_TIME);
-
-		for (size_t i = 0; i < count_alternatives; i++)
+		for (usht i = 0; i < count_alternatives; i++)
 		{
-			rr_route route = schedule.at(index_route);
-			route.departure_data -=
-				41 * get_time(route.departure_data);
-			route.departure_data +=
-				41 * (unsigned short)g(G_MINIMUM_TIME, G_MAXIMUM_TIME);
-			route.arrival_data -=
-				41 * get_time(route.arrival_data);
-			route.arrival_data +=
-				41 * (unsigned short)g(G_MINIMUM_TIME, G_MAXIMUM_TIME);
-			schedule.insert(schedule.begin() + index_schedule_global, route);
-			index_schedule_global++;
+			ez_route route = ref;
+			route.departure_time =
+					g(G_MINIMUM_TIME, G_MAXIMUM_TIME);
+			route.arrival_time =
+					g(G_MINIMUM_TIME, G_MAXIMUM_TIME);
+
+			schedule.insert(schedule.begin() + index_schedule_local, route);
+			index_schedule_local++;
 		}
 
-		index_schedule_global++;
+		index_schedule_local++;
 	}
 }
 
