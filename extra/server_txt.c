@@ -187,7 +187,7 @@ int main(int argc, char *argv[])
 }
 
 // receives three bytes sends two bytes at minimum
-void *udp_communication(void *)
+void *udp_communication(void * ignore)
 {
   // todo received udp socket as parameter not global
   unsigned char buffer[3];
@@ -277,7 +277,7 @@ void *tcp_communication(const int sd)
   return NULL;
 }
 
-void *multiplexing(void *)
+void *multiplexing(void * ignore)
 {
   struct timeval TV = {1, 0};
   for (; running_condition();)
@@ -408,7 +408,7 @@ int maintenance(pthread_t *th0, pthread_t *th1,
   // restart threads
   call0(pthread_create(th0, NULL,
                        &multiplexing, NULL));
-  call0(pthread_create(th0, NULL,
+  call0(pthread_create(th1, NULL,
                        &udp_communication, NULL));
 
   // restart serving clients

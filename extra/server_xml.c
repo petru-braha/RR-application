@@ -186,7 +186,7 @@ int main(int argc, char *argv[])
 }
 
 // receives three bytes sends two bytes at minimum
-void *udp_communication(void *)
+void *udp_communication(void * ignore)
 {
   // todo received udp socket as parameter not global
   unsigned char buffer[3];
@@ -276,7 +276,7 @@ void *tcp_communication(const int sd)
   return NULL;
 }
 
-void *multiplexing(void *)
+void *multiplexing(void * ignore)
 {
   struct timeval TV = {1, 0};
   for (; running_condition();)
