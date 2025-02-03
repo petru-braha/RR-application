@@ -407,7 +407,7 @@ int maintenance(pthread_t *th0, pthread_t *th1,
   // restart threads
   call0(pthread_create(th0, NULL,
                        &multiplexing, NULL));
-  call0(pthread_create(th0, NULL,
+  call0(pthread_create(th1, NULL,
                        &udp_communication, NULL));
 
   // restart serving clients
