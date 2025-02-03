@@ -80,12 +80,7 @@ int main(int argc, char *argv[])
 		exit(EXIT_FAILURE);
 	}
 
-	xmlNewTextChild(root_node, NULL,
-									(const xmlChar *)"schedule",
-									(const xmlChar *)"0");
-	xmlNodePtr node =
-			root_node->xmlChildrenNode->next;
-
+	xmlNodePtr node = nullptr;
 	for (usht i = 0; i < schedule.size(); i++)
 	{
 		char buffer[10];
@@ -93,6 +88,10 @@ int main(int argc, char *argv[])
 		xmlNewTextChild(root_node, NULL,
 										(const xmlChar *)"route",
 										nullptr);
+		if(0 == i)
+			node = root_node->xmlChildrenNode;
+		if(node->next)
+			node = node->next;
 
 		sprintf(buffer, "%u", schedule[i].departure_location);
 		xmlNewTextChild(node, NULL,
@@ -113,8 +112,6 @@ int main(int argc, char *argv[])
 		xmlNewTextChild(node, NULL,
 										(const xmlChar *)"time_arrival",
 										(const xmlChar *)buffer);
-
-		node = node->next;
 	}
 
 	printf("%zu routes were generated.\n", schedule.size());
@@ -184,9 +181,6 @@ void location_generation(std::vector<ez_route> &schedule)
 		arrival_location[index_city] = 0;
 		arrival_location[0] = index_city;
 		select_restriction(count_arrival_location, arrival_location);
-		/*for (usht i = 1; i <= count_arrival_location; i++)
-			if (arrival_location[i] == index_city)
-				printf("bad %u \n", index_city);*/
 
 		// include the random results into locations
 		locations[index_city].reserve(count_arrival_location);
@@ -194,9 +188,17 @@ void location_generation(std::vector<ez_route> &schedule)
 			locations.at(index_city).emplace_back(arrival_location[i]);
 	}
 
+	size_t total_size = 0;
+	for (const auto &pair : locations)
+		total_size += pair.second.size();
+	if (total_size * G_MAXIMUM_ALTV >= COUNT_ROUTES_MAX)
+	{
+		printf("write_xml() failed - too many entries.\n");
+		exit(EXIT_FAILURE);
+	}
+
 	for (usht index_city = 0;
-			 index_city < COUNT_LOCATION &&
-			 schedule.size() < COUNT_ROUTES_MAX;
+			 index_city < COUNT_LOCATION;
 			 index_city++)
 		for (usht i_arrival = 0;
 				 i_arrival < locations.at(index_city).size() &&
@@ -210,33 +212,50 @@ void location_generation(std::vector<ez_route> &schedule)
 		}
 }
 
+void analysis(std::vector<ez_route> &schedule)
+{
+	size_t counter[COUNT_LOCATION];
+	for (size_t i = 0; i < COUNT_LOCATION; i++)
+		counter[i] = 0;
+	for (size_t i = 0; i < schedule.size(); i++)
+		counter[schedule[i].departure_location]++;
+	for (size_t i = 0; i < COUNT_LOCATION; i++)
+		printf("%zu:%zu ", i, counter[i]);
+	printf("\n");
+}
+
 void schedule_generation(std::vector<ez_route> &schedule)
 {
-	usht count_schedule = schedule.size();
-	usht count_alternatives = g(G_MINIMUM_ALTV, G_MAXIMUM_ALTV);
-	usht index_schedule_local = 0;
+	// analysis(schedule);
 	for (usht index_route = 0;
-			 index_route < count_schedule &&
-			 schedule.size() < COUNT_ROUTES_MAX;
+			 index_route < schedule.size();
 			 index_route++)
 	{
 		ez_route &ref = schedule[index_route];
-		ref.departure_time = g(G_MINIMUM_TIME, G_MAXIMUM_TIME);
-		ref.arrival_time = g(G_MINIMUM_TIME, G_MAXIMUM_TIME);
+		ref.departure_time =
+				g(G_MINIMUM_TIME, G_MAXIMUM_TIME);
+		ref.arrival_time =
+				g(G_MINIMUM_TIME, G_MAXIMUM_TIME);
+	}
 
-		for (usht i = 0; i < count_alternatives; i++)
+	usht count_alternatives = g(G_MINIMUM_ALTV, G_MAXIMUM_ALTV);
+	while (count_alternatives)
+	{
+		std::vector<ez_route> data = schedule;
+		for (usht index_route = 0;
+				 index_route < data.size();
+				 index_route++)
 		{
-			ez_route route = ref;
-			route.departure_time =
+			ez_route &ref = data[index_route];
+			ref.departure_time =
 					g(G_MINIMUM_TIME, G_MAXIMUM_TIME);
-			route.arrival_time =
+			ref.arrival_time =
 					g(G_MINIMUM_TIME, G_MAXIMUM_TIME);
-
-			schedule.insert(schedule.begin() + index_schedule_local, route);
-			index_schedule_local++;
 		}
 
-		index_schedule_local++;
+		schedule.insert(schedule.end(),
+										data.begin(), data.end());
+		count_alternatives--;
 	}
 }
 
