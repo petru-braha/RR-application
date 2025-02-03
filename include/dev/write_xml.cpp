@@ -22,7 +22,6 @@ struct ez_route
 	usht arrival_time = 0;
 };
 
-int rate(const usht);
 void select_restriction(const usht, usht *const);
 void location_generation(std::vector<ez_route> &);
 void schedule_generation(std::vector<ez_route> &);
@@ -31,9 +30,9 @@ int main(int argc, char *argv[]);
 
 constexpr usht COUNT_ROUTES_MAX = 10000;
 constexpr usht COUNT_LOCATION = 41;
-constexpr usht BB = 0;
-constexpr usht CJ = 13;
-constexpr usht IS = 24;
+constexpr usht BB = 24;
+constexpr usht CJ = 12;
+constexpr usht IS = 23;
 
 constexpr usht G_MINIMUM_CITY = 1;
 constexpr usht G_MAXIMUM_CITY =
@@ -124,18 +123,6 @@ int main(int argc, char *argv[])
 	return EXIT_SUCCESS;
 }
 
-int rate(const usht city)
-{
-	usht minimum = 0, maximum = COUNT_LOCATION / 2;
-	if (city == BB || city == IS || city == CJ)
-	{
-		minimum += 3;
-		maximum += 3;
-	}
-
-	return g(minimum, maximum);
-}
-
 // the first element is invalid
 void select_restriction(const usht count_index, usht *const results)
 {
@@ -175,8 +162,20 @@ void location_generation(std::vector<ez_route> &schedule)
 	std::unordered_map<int, std::vector<int>> locations;
 	for (usht index_city = 0; index_city < COUNT_LOCATION; index_city++)
 	{
+		// add extra routes for big cities
+		usht G_MIN = G_MINIMUM_CITY,
+				 G_MAX = G_MAXIMUM_CITY;
+		if (BB == index_city ||
+				CJ == index_city ||
+				IS == index_city)
+		{
+			G_MIN += COUNT_LOCATION - G_MAXIMUM_CITY;
+			G_MAX += COUNT_LOCATION - G_MAXIMUM_CITY;
+		}
+
+		const usht count_arrival_location = g(G_MIN, G_MAX);
+
 		// create index array from 0 to 40
-		const usht count_arrival_location = g(G_MINIMUM_CITY, G_MAXIMUM_CITY);
 		usht arrival_location[COUNT_LOCATION];
 		for (usht i = 0; i < count_arrival_location; i++)
 			arrival_location[i] = i;

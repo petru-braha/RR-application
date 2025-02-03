@@ -3,15 +3,13 @@
 0. portability, pthread_t (windows), without xml (old linux) (libraries are ok on faculty's server)
 0. better names/function length
 0. conc_serv
-0. cpp rate
-0. change time after an ip address becomes available again after closing server
-0. faculty running server
 
 <br>
 
 0. raport: TDD, security if party crashes
 0. raport: timed experiment - see conc_serv
 0. raport: limitations (introduction), scenarios in conclusions
+0. random generation: rate(), constexpr
 
 ### definitions
 
@@ -98,6 +96,13 @@
 | 252  | arrivals   |
 | 5    | report     |
 | 6    | quit       |
+
+### random generation
+
+- from each city there is at least a departure in one day
+- each city has at most 27 departures in one day
+- time is evaluated within [0, 1440] minutes interval
+- each route has between [2, 6] time alternatives
 
 ### decisions
 
