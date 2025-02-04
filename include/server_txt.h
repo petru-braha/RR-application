@@ -2,6 +2,7 @@
 #ifndef _00GENERATE00_
 #define _00GENERATE00_
 
+#define _GNU_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

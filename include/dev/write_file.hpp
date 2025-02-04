@@ -33,8 +33,8 @@ constexpr usht G_MAXIMUM_CITY =
 constexpr usht G_MINIMUM_TIME = 0;
 constexpr usht G_MAXIMUM_TIME = 1440;
 
-constexpr usht G_MINIMUM_ALTV = 2;
-constexpr usht G_MAXIMUM_ALTV = 6;
+constexpr usht G_MINIMUM_ALTV = 3;
+constexpr usht G_MAXIMUM_ALTV = 8;
 
 random_generator g;
 
@@ -109,7 +109,7 @@ void location_generation(std::vector<ez_route> &schedule)
 	size_t total_size = 0;
 	for (const auto &pair : locations)
 		total_size += pair.second.size();
-	if (total_size * G_MAXIMUM_ALTV >= COUNT_ROUTES_MAX)
+	if (total_size * (G_MAXIMUM_ALTV + 1) >= COUNT_ROUTES_MAX)
 	{
 		printf("write_xml() failed - too many entries.\n");
 		exit(EXIT_FAILURE);
@@ -156,15 +156,16 @@ void schedule_generation(std::vector<ez_route> &schedule)
 				g(G_MINIMUM_TIME, G_MAXIMUM_TIME);
 	}
 
+	std::vector<ez_route> data = schedule;
 	usht count_alternatives = g(G_MINIMUM_ALTV, G_MAXIMUM_ALTV);
 	while (count_alternatives)
 	{
-		std::vector<ez_route> data = schedule;
+		std::vector<ez_route> segment = data;
 		for (usht index_route = 0;
-				 index_route < data.size();
+				 index_route < segment.size();
 				 index_route++)
 		{
-			ez_route &ref = data[index_route];
+			ez_route &ref = segment[index_route];
 			ref.departure_time =
 					g(G_MINIMUM_TIME, G_MAXIMUM_TIME);
 			ref.arrival_time =
@@ -172,7 +173,7 @@ void schedule_generation(std::vector<ez_route> &schedule)
 		}
 
 		schedule.insert(schedule.end(),
-										data.begin(), data.end());
+										segment.begin(), segment.end());
 		count_alternatives--;
 	}
 }

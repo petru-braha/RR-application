@@ -100,7 +100,7 @@
     - each city has at most 27 departures in one day
     - iasi cluj bucharest - higher probability for route generation
 - time is evaluated within [0, 1440] minutes interval
-    - each route has between [2, 6] time alternatives
+    - each route has between [3, 8] time alternatives
 - there are no route cycles - starting and arriving in the same county is not possible
 
 ### decisions

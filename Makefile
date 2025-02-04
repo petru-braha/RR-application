@@ -2,7 +2,7 @@ txt:
 	gcc client.c -std=c11 -o cl
 	cp extra/server_txt.c server.c
 	g++ include/dev/write_txt.cpp -std=c++11 -o include/dev/write_txt
-	gcc server.c -std=c11 -pthread -o sv
+	gcc server.c -std=c11 -pthread -w -o sv
 
 xml: /usr/include/libxml2
 	gcc client.c -std=c11 -o cl
