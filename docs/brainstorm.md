@@ -1,8 +1,12 @@
+### to do now
+
+- video presentation
+- raport: change remote-mypc, TDD, limitations (introduction), scenarios in conclusions
+
 ### to do when paid
 
-0. code review
-0. raport: change remote-mypc, TDD, limitations (introduction), scenarios in conclusions
-0. code: random generation constexpr, conc_serv, mutex
+- code review
+- code: random generation constexpr, conc_serv, mutex
 
 ### definitions
 

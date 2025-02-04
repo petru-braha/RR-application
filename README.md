@@ -32,17 +32,16 @@ Please consult some definitions from [here](./docs/brainstorm.md)
 - create thread for each client
 - i/o multiplexing with non-blocking calls
 
-### Security
-
-- specific procedures for possible errors
-- solution if one party stops responding
-- second end of the server
-
 ### Correctness
 
 - client uses tcp to server when sending data
 - client uses udp to server when sending queries
 - server uses tcp to client when sending data
+
+### Security
+
+- specific procedures for possible errors
+- solution if one party stops responding
 
 ## Limitations
 

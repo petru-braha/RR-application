@@ -34,19 +34,18 @@ Puteți găsi versiunea acestui document in engleza [aici](./../README.md).
 - creare unui nou thread pentru fiecare client
 - multiplexare i/o cu ​​apeluri neblocante
 
-### Securitate
-
-- proceduri specifice pentru erori posibile
-- solutie daca un actor se opreste din a raspunde
-- alt end pentru server
-
 ### Corectitudine
 
 - clientul folosește tcp către server atunci când trimite date
 - clientul folosește udp la server atunci când trimite interogări
 - serverul folosește tcp către client atunci când trimite date
 
+### Securitate
+
+- proceduri specifice pentru erori posibile
+- solutie daca un actor se opreste din a raspunde
+
 ## Limitari
 
 - doar 1024 de utilizatori pot fi conectati simultan
-- cod neportabil pe Windows
+- neportabil pe Windows

@@ -1,8 +1,8 @@
 /* comments:
  * server.c - a concurrent server with i/o multiplexing, and two transport protocols
  * author - Braha Petru Bogdan - <petrubraha@gmail.com> (c)
- * compilation command: gcc server.c -std=c11 -pthread -I/usr/include/libxml2 -lxml2 -o sv
- * run command example: ./sv 'schedule.xml'
+ * compilation command: gcc server.c -std=c11 -pthread -o sv
+ * run command example: ./sv 'schedule.txt'
  * run command example: ./sv
  */
 
@@ -27,7 +27,7 @@
 #include "include/error.h"
 #include "include/printer.h"
 #include "include/route.h"
-#include "include/server_xml.h" //!
+#include "include/server_txt.h" //!
 #include "include/server_api.h"
 
 typedef struct
@@ -38,12 +38,12 @@ typedef struct
 
 //------------------------------------------------
 
-void check_xml(int *argc, char *argv[],
-               char *const path_xml);
+void check_txt(int *argc, char *argv[],
+               char *const path_txt);
 bool running_condition();
 int maintenance(pthread_t *th0, pthread_t *th1,
                 const int argc,
-                char *const path_xml);
+                char *const path_txt);
 
 // three threads
 void *udp_communication(void *);
@@ -53,11 +53,11 @@ int main(int argc, char *argv[]);
 //------------------------------------------------
 
 #define path_thread "include/dev/key.txt"
-#define path_stable "include/data/default schedule.xml"
-#define path_binary "include/dev/write_xml" //!
-#define name_random "random schedule.xml"
+#define path_stable "include/data/default schedule.txt"
+#define path_binary "include/dev/write_txt" //!
+#define name_random "random schedule.txt"
 #define path_to_build "include/data/"
-#define path_location "include/data/random schedule.xml"
+#define path_location "include/data/random schedule.txt"
 
 rr_fd descriptors;
 int sd_udp;
@@ -66,11 +66,11 @@ int sd_udp;
 
 int main(int argc, char *argv[])
 {
-  char path_xml[BYTES_PATH_MAX];
-  strcpy(path_xml, path_to_build);
+  char path_txt[BYTES_PATH_MAX];
+  strcpy(path_txt, path_to_build);
 
-  check_xml(&argc, argv, path_xml);
-  read_xml(path_xml);
+  check_txt(&argc, argv, path_txt);
+  read_txt(path_txt);
   call(printf("%d routes are valid.\n", count_routes));
 
   // server address
@@ -131,7 +131,7 @@ int main(int argc, char *argv[])
         printf("maintenance started.\n");
         if (ERR_CODE ==
             maintenance(&multiplexing_thread,
-                        &udp_thread, argc, path_xml))
+                        &udp_thread, argc, path_txt))
           error("maintenance() failed");
         else
           printf("maintenance finished.\n\n");
@@ -307,40 +307,40 @@ void *multiplexing(void * ignore)
 
 //------------------------------------------------
 
-void check_xml(int *argc, char *argv[],
-               char *const path_xml)
+void check_txt(int *argc, char *argv[],
+               char *const path_txt)
 {
   if (*argc > 2)
   {
-    error("at most one xml file name is expected");
+    error("at most one txt file name is expected");
     exit(EXIT_FAILURE);
   }
 
   if (1 == *argc)
   {
-    strcat(path_xml, name_random);
+    strcat(path_txt, name_random);
     if (EXIT_FAILURE ==
         write_file(path_binary, path_location))
-      strcpy(path_xml, path_stable);
+      strcpy(path_txt, path_stable);
     return;
   }
 
   // 2 == argc
   char path_tmp[BYTES_PATH_MAX];
-  strcpy(path_tmp, path_xml);
+  strcpy(path_tmp, path_txt);
   strcat(path_tmp, argv[1]);
-  if (0 == test_xml(path_tmp))
+  if (0 == test_txt(path_tmp))
   {
-    strcat(path_xml, argv[1]);
+    strcat(path_txt, argv[1]);
     return;
   }
 
   // random generation
   *argc = 1; // later generations
-  strcat(path_xml, name_random);
+  strcat(path_txt, name_random);
   if (EXIT_FAILURE ==
       write_file(path_binary, path_location))
-    strcpy(path_xml, path_stable);
+    strcpy(path_txt, path_stable);
 }
 
 /* a server should always be online
@@ -370,9 +370,9 @@ bool running_condition()
  */
 int maintenance(pthread_t *th0, pthread_t *th1,
                 const int argc,
-                char *const path_xml)
+                char *const path_txt)
 {
-  if (NULL == th0 || NULL == th1 || NULL == path_xml)
+  if (NULL == th0 || NULL == th1 || NULL == path_txt)
     return ERR_CODE;
 
   // stop serving clients
@@ -399,9 +399,9 @@ int maintenance(pthread_t *th0, pthread_t *th1,
   {
     if (EXIT_FAILURE ==
         write_file(path_binary, path_location))
-      strcpy(path_xml, path_stable);
+      strcpy(path_txt, path_stable);
   }
-  read_xml(path_xml);
+  read_txt(path_txt);
   call(printf("%d routes are valid.\n", count_routes));
 
   // restart threads

@@ -19,9 +19,9 @@
 
 \maketitle
 
-\begin{abstract} This work contains an overview of the client-server paradigm offering, to the public transport companies, a concrete (and open source) informational system connected with potential clients. This system provides a service that notifies the consumers about the traveling schedule, the available means of transport (e.g. trains) associated with their time and location, and other related knowledge such as status of departure/arrival and vehicle identification. Any user can report late arrivals, but in a controlled manner such that the misleading records are checked and ignored, if necessary. The application runs concurrently and achieves great communication speed with the customers and good quality of the responses delegated. The security of the system is accomplished by having two different running servers at different locations. If one of them fails, there exists a guaranteed backup. Their communication is not omitted. This paper represents an implementation reference for the field of network programming and management.
+\begin{abstract} This work contains an overview of the client-server paradigm offering, to the public transport companies, a concrete (and open-source) informational system connected with potential clients. This system notifies consumers about the traveling schedule for the current day, the available means of transport (e.g., trains) associated with their time and location, and other related knowledge such as status of departure/arrival and vehicle identification. Any user can report late arrivals, but in a controlled manner such that the misleading records are checked and ignored, if necessary. The application achieves great communication speed with the customers, minimizing the risk of damage to the data quality. Currently, the server application is continuously running and ready to serve queries. One particular limitation regarding security is the single point of failure. With some financial investments, the code base could be generalized to integrate multiple server ends. This paper represents an implementation reference for network programming and administration and a complete review of my repository.
 
-\keywords{Server \and Client \and Concurrency \and Transport level \and I/O multiplexing \and Commands \and Threads \and Sockets }
+\keywords{Server \and Client \and Application level \and Transport level \and I/O multiplexing \and TCP \and UDP \and Thread \and Socket }
 \end{abstract}
 
 %%------------------------------------------------
@@ -29,36 +29,36 @@
 
 \section{Introduction}
 
-"Romanian Railways" is a project which involves compilation of two programs: one for the server and the other for client(s). It is in a professionally working state when two "server.c" instances are concurrently running indefinitely. One of such instance could manage x number of clients, where $x \in \left[0, 1024\right]$ (this limitation is later disclosed in the forth chapter). 
+"Romanian Railways" involves compiling two programs: one for the server and the other for the client(s). Now, it is in a professionally working state, with one server instance running indefinitely at 10.100.0.30, port 2970. The maximum capacity of connected users is 1024 per server instance, which can increase in case of growth in resources allocated for this project.
 
-The current document continues to explain the requirements of such a system, the logic behind it, and the real use cases. Within the next section, a short list of the adopted technologies can be explored. Choosing the right tools will determine the overall quality of the apps. In the third chapter, you may find the structure of the server application, and some illustrations of the routines executed. Following this, additional details, experiments, and observations are analyzed. The advantages and roles of the decisions took regarding the implementation are discussed too. This part creates an opening of the API definitions at application level. The conclusions will summarize my project and propose some scenarios where the "RR application" could be useful.
+The current document continues to explain some requirements and the logic behind the code. The following section will explore a short list of the adopted technologies. Choosing the right tools will determine the overall quality of the apps. In the third chapter, you may find the structure of the server application and some illustrations of the routines executed. Following this, additional details, experiments, and observations are analyzed. The advantages and roles of the implementation decisions are discussed. This part opens up the API definitions at the application level. The conclusions will summarize my project and propose some scenarios where the "RR application" could be helpful.
 
 \subsection{Motivation}
 
-The entire repository is a matter of personal interest for the "Computer Networks" course. Officially, it is known as a laboratory homework, but the main goal is far higher: to be a contribution in practical life. Being encouraged to provide a creative solution, this project was designed.
+The entire repository is a matter of personal interest for the "Computer Networks" course. Officially, it is known as laboratory homework, but the main goal is far higher: contributing to practical life. When designing this project, I was encouraged to provide an optimal and creative implementation.
 
 \section{Applied Technologies}
 
-Three main core objectives were followed in the development: speed, correctness and security. Therefore C programming language was elected because:
+Three main core objectives were followed in the development: speed, correctness, and security. Therefore C programming language was elected because:
 \begin{itemize}
-    \item it is one of the fastest compiled language 
+    \item it is one of the fastest compiled languages
     \item it supplies network management resources, such as threads and sockets
-    \item it delivers simple syntax, yet highly customizable flags and options (very important in the current implementation - see non-blocking calls)
+    \item it delivers simple syntax, yet highly customizable flags and options (very important for the non-blocking calls)
     \item it has all the necessary tools to assure the objectives previously considered; a more advanced language like C++ would add an layer of unnecessary complexity
 \end{itemize}
 
-The server has to be concurrent for reasons later argued. To attain this, threads were selected to handle this requirement; they are a multiple-purpose mechanism, as we'll observe in the final composition of the program. Last but not least, the exchange of messages between the customers and the server are realized with sockets through TCP and UDP, transport level protocols.
+For reasons later argued, the server has to be concurrent. To attain this, threads were selected to handle this requirement; they are a multiple-purpose mechanism, as we'll observe in the final composition of the program. Last but not least, the exchange of messages between the customers and the server is realized with sockets through TCP and UDP, transport-level protocols.
 
 %%------------------------------------------------
 %%------------------------------------------------
 
 \section{Application Structure}
 
-This section covers fundamental information about the internal mechanism of the project, accompanied by a simplified, user-oriented guide. Both parts will consolidate the logic of the operations defined in the server's API. 
+This section covers fundamental information about the internal mechanism of the project, accompanied by a simplified, user-oriented guide. Both parts will consolidate the logic of the operations defined in the server's API.
 
 \subsection{The order of execution}
 
-The server's program consists of multiple calls and has a rich structure. Because of this, in the next page we will examine a diagram of the core procedures. Breaking down the components of the application(s) into POSIX's standard syntax will form a compacted overview easy to follow along. Doing this also allows us to mark the order of the events: the closer to the top of the figure a function is, the earlier it is being called. Arrows don't necessarily imply succession, they're being used to suggest what to be considered.
+The server's program consists of multiple calls and has a rich structure. Because of this, on the next page, we will examine a diagram of the core procedures. Breaking down the components of the application(s) into POSIX's standard syntax will form a compact overview that is easy to follow. Doing this also allows us to mark the order of the events: the closer to the top of the figure a function is, the earlier it is being called. Arrows don't necessarily imply succession; they're being used to suggest what to consider.
 
 \newpage
 \begin{figure}[!h]
@@ -66,11 +66,11 @@ The server's program consists of multiple calls and has a rich structure. Becaus
     \caption{Execution illustration} \label{fig1}
 \end{figure}
 
-Before commenting client.c let's focus on the server. This drawing can be splitted into two steps: the initialization stage and the loop. The initialization begins by creating an empty set of socket descriptors - a set which will keep track of the customers. Then, sets-up two non-blocking sockets by linking them with the server's address (setsockopt() and SO\_REUSEADDR are called to avoid distinguishing sockets with other ports). The first socket is the preliminary step of the TCP's three-way handshake (listens for connections) and the second one has a special role (UDP transmissions), explained in the next chapter.
+Let's start commenting "server.c" and then focus on the client side. This drawing is split into two main frames: the initialization stage and the loop. The initialization begins by creating an empty set of socket descriptors - a set that keeps track of the customers. Then, it sets up two non-blocking sockets by linking them with the server's address (setsockopt(), SO\_REUSEADDR). The first socket is the preliminary step of the TCP's three-way handshake (listens for connections), while the second one involves the UDP transmissions.
 
-Initialization ends when the process is divided into three threads. Now the server enters in a pseudo-infinite loop. Why pseudo? If an admin logs in, running\_condition() could return false and stop the algorithm. The root thread (the middle one) accepts new connections, while the others organize the data travel. The ioctl() function adds the non-blocking feature to the new clients' sockets, if accepted. They will also be declared in the set initialized earlier. The next thread to be discussed (the one from the right) takes advantage of this set. As we noticed up until now, the socket operations will always be in a non-blocking state, opening the gate for I/O multiplexing. Briefly, clients are treated TCP likewise here, and similarly to this, the last thread (the far left one) has the same purpose but using the UDP communication.
+The initialization stage ends when the initial process is divided into three threads. Now, the server enters in a pseudo-infinite loop. Why pseudo? If an admin logs-in, running\_condition() could return false and stop the algorithm. The root thread (the middle one) accepts new connections, while the others organize the data travel. The ioctl() function adds the non-blocking feature to the latest accepted clients' sockets. They will also be declared in the set initialized earlier. The following thread to be discussed (the one from the right) takes advantage of this set. The socket operations will always be in a non-blocking state. That's why the I/O multiplexing joined the game. Briefly, clients are treated TCP likewise here, and similarly to this, the last thread (the far left one) has the same purpose but uses the UDP communication.
 
-Having this structure of the server is mind follows that every client needs two sockets. Depending on his request type, his message is sent to one of the travel responsible threads using either read() and write(), or sendto() and recvfrom(). The client application also runs in a loop, granting the user to explore live different updates. Note that client's connection-less socket is associated with a connection operation (this article explains more about this phenomenon \cite{udp-connect}).
+Considering the server's structure, it follows that every client needs two sockets. Depending on his request type, his message is sent to one of the travel-responsible threads using either read() and write() or sendto() and recvfrom(). The client application also runs in a loop, granting the user the ability to explore different updates live. Note that the client's connection-less socket is associated with a connection operation (this article explains more about this phenomenon \cite{udp-connect}).
 
 \subsection{Use case diagram}
 
