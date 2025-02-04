@@ -2,7 +2,7 @@
 
 Puteți găsi versiunea acestui document in engleza [aici](./../README.md).
 
-<video controls src="video_ro.mp4" title="Title"></video>
+<video controls src="video_ro_comp.mp4" title="Presentation" type="video/mp4"></video>
 
 ## Fișiere principale
 
