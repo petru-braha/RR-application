@@ -1,6 +1,6 @@
 ### to do now
 
-- video presentation
+- route generation: limit them
 - raport: change remote-mypc, TDD, limitations (introduction), scenarios in conclusions
 
 ### to do when paid

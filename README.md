@@ -2,6 +2,8 @@
 
 You can find the romanian version of this document [here](./docs/README_RO.md).
 
+<video controls src="docs/video_ro.mp4" title="Title"></video>
+
 ## Usage
 
 - official documentation is avaible [here](./docs/rr_raport.pdf)

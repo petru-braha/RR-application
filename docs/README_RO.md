@@ -2,6 +2,8 @@
 
 Puteți găsi versiunea acestui document in engleza [aici](./../README.md).
 
+<video controls src="video_ro.mp4" title="Title"></video>
+
 ## Fișiere principale
 
 - [aplicație client](./../client.c)
