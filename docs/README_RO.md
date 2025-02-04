@@ -2,7 +2,7 @@
 
 Puteți găsi versiunea acestui document in engleza [aici](./../README.md).
 
-<video controls src="video_ro_comp.mp4" title="Presentation" type="video/mp4"></video>
+https://github.com/user-attachments/assets/b17811d2-45a2-4e7a-8d8b-987f20e0e028
 
 ## Fișiere principale
 
