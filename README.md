@@ -2,7 +2,7 @@
 
 You can find the romanian version of this document [here](./docs/README_RO.md).
 
-<video controls src="docs/video_ro.mp4" title="Title"></video>
+<video controls src="docs/video_ro.mp4" title="Presentation" type="video/mp4"></video>
 
 ## Usage
 
