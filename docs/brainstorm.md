@@ -1,15 +1,8 @@
-### to do
+### to do when paid
 
-0. windows portability
-0. better names/function length
-0. conc_serv
-
-<br>
-
-0. raport: TDD, security if party crashes
-0. raport: timed experiment - see conc_serv
-0. raport: limitations (introduction), scenarios in conclusions
-0. random generation: rate(), constexpr
+0. code review
+0. raport: change remote-mypc, TDD, limitations (introduction), scenarios in conclusions
+0. code: random generation constexpr, conc_serv, mutex
 
 ### definitions
 
