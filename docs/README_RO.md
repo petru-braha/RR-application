@@ -6,11 +6,11 @@ https://github.com/user-attachments/assets/b17811d2-45a2-4e7a-8d8b-987f20e0e028
 
 ## Fișiere principale
 
+- [documentație oficială](./RR_documentation.pdf)
 - [aplicație client](./../client.c)
 - [aplicație server](./../server.c)
-- [documentație oficială](./rr_raport.pdf)
 
-## Technologies
+## Tehnologii
 
 - C - socket(), bind(), connect(), pthread_t
 - C++ - std::mt1337
@@ -20,15 +20,11 @@ https://github.com/user-attachments/assets/b17811d2-45a2-4e7a-8d8b-987f20e0e028
 
 ### Protocolul de comunicare
 
-0. [id_train, time_departure_estimated, time_arrival_estimated, status] routes(location_departure, location_arrival)
-1. [id_train, time_departure_confirmed, location_arrival] plecări(location_departure)
-2. [id_train, time_arrival_confirmed, location_departure] arrivals(location_arrival)
-3. bool report(id_train, minute)
-4. bool quit()
-
-- synopsis de functie: return_type nume_funcție parametru(i)
-- timpii estimați = timpii inițiali definiți de programul generat
-- ore confirmate = ore estimate +/- întârzieri (depinde dacă trenul ajunge mai devreme sau mai târziu)
+- [id_train, time_departure_estimated, time_arrival_estimated, status] routes(location_departure, location_arrival);
+- [id_train, time_departure_confirmed, location_arrival] plecări(location_departure);
+- [id_train, time_arrival_confirmed, location_departure] arrivals(location_arrival);
+- bool report(id_train, minute);
+- bool quit();
 
 ### Viteza
 	

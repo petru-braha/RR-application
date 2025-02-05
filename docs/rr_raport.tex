@@ -69,7 +69,7 @@ The initialization stage ends when the initial process is divided into three thr
   \label{fig:exe}
 \end{figure}
 
-Note that running\_condition() always returns true, with one exception: an "administrative key" that stops the algorithm and closes the server. The file "include/dev/key.txt" influences the behavior of the about function. The administrator could close the server if he empties the content of this file. If no changes are registered to it, the server will continue running.
+Note that running\_condition() always returns true, with one exception: an "administrative key" that stops the algorithm and closes the server. The file "include/dev/key.txt" influences the behavior of the function. The administrator could close the server if he empties the content of this file. If no changes are registered to it, the server will continue running.
 
 Considering the server's structure, every client needs two sockets. Depending on their request, the message is sent using either read() and write(), or sendto() and recvfrom(). The client application also runs in a loop, allowing the user to explore different updates live. Note that the client's connection-less socket is associated with connect() (more here: \cite{udp-connect}).
 
@@ -90,9 +90,9 @@ The following list of strategies were evaluated in the latest release:
   \item thread per client.
 \end{itemize}
 
-Using threads over child processes is due to their "shared memory" character (please also note: \cite{fork-vs-thread}). Even if a child process is "copy on write" optimized, it is not the best choice for a long-term running server that frequently updates all of the data. 
+Using threads over child processes is due to their shared memory character (please also note: \cite{fork-vs-thread}). Even if a child process is "copy on write" optimized, it is not the best choice for a long-term running server that frequently updates all of the data. 
 
-What about the "pre-threading"? Approaching this requires fixing a specific number of threads, say $x$, which could be overwhelmed by $x + 1$ clients. This fault could be countered by adding threads for exceeding customers. Theoretically speaking, this is the obvious choice. But there is a catch: hardware. Having too many threads could slow down the computing power drastically. Knowing that the server application should be compatible with systems with a limited number of cores, this approach is not optimal. What if multiple server instances will be running in sync in the future? The constant number of threads has to adapt to machines with different components.
+What about the pre-threading? Approaching this requires fixing a specific number of threads, say $x$, which could be overwhelmed by $x + 1$ clients. This fault could be countered by adding threads for exceeding customers. Theoretically speaking, this is the obvious choice. But there is a catch: hardware. Having too many threads could slow down the computing power drastically. Knowing that the server application should be compatible with systems with a limited number of cores, this approach is not optimal. What if multiple server instances will be running in sync in the future? The constant number of threads has to adapt to machines with different components.
 
 So, the final configuration is a hardware-portable combination of the second approach and I/O multiplexing. The server works with only three threads. Let the basic iterative TCP server be our guide for now (an example can be viewed here: \cite{course} - week 5). It has to accept connections, manage descriptors, and send data. Wouldn't it be faster to run these concurrently? The previously discussed picture precisely foreshadowed this. One thread takes care of the connections, another checks which customers are ready to be dealt with, and the last one's role is to provide a gateway for connection-less requests.
 

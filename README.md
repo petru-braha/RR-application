@@ -4,9 +4,9 @@ You can find the romanian version of this document [here](./docs/README_RO.md).
 
 https://github.com/user-attachments/assets/b17811d2-45a2-4e7a-8d8b-987f20e0e028
 
-## Usage
+## Main files
 
-- official documentation is avaible [here](./docs/rr_raport.pdf)
+- [official documentation](./docs/RR_documentation.pdf)
 - [client application](./client.c)
 - [server application](./server.c)
 
@@ -22,11 +22,11 @@ https://github.com/user-attachments/assets/b17811d2-45a2-4e7a-8d8b-987f20e0e028
 
 Please consult some definitions from [here](./docs/brainstorm.md)
 
-- [id_train, time_departure, time_arrival, status] routes(location_departure, location_arrival)
-- [id_train, time_departure, location_arrival] departures(location_departure)
-- [id_train, time_arrival, location_departure] arrivals(location_arrival)
-- bool report(id_train, minutes)
-- bool quit()
+- [id_train, time_departure, time_arrival, status] routes(location_departure, location_arrival);
+- [id_train, time_departure, location_arrival] departures(location_departure);
+- [id_train, time_arrival, location_departure] arrivals(location_arrival);
+- bool report(id_train, minutes);
+- bool quit();
 
 ### Speed
 	
