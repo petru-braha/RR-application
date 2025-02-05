@@ -45,7 +45,8 @@ https://github.com/user-attachments/assets/b17811d2-45a2-4e7a-8d8b-987f20e0e028
 ### Securitate
 
 - proceduri specifice pentru erori posibile
-- solutie daca un actor se opreste din a raspunde
+- solutii daca un actor se opreste din a raspunde
+- test driven-development
 
 ## Limitari
 

@@ -1,13 +1,3 @@
-### to do now
-
-- route generation: limit them
-- raport: change remote-mypc, TDD, limitations (introduction), scenarios in conclusions
-
-### to do when paid
-
-- code review
-- code: random generation constexpr, conc_serv, mutex
-
 ### definitions
 
 - locations types
@@ -125,3 +115,11 @@
 
 - client disconnects during operation => server warning
 - server shutdowns during operation => close clients
+
+### to do when paid
+
+- code review
+- code: random generation constexpr, conc_serv, mutex
+- new thread per client IF! there could be speed improvements
+- second end of server
+- include absolulety everything into the documentation  

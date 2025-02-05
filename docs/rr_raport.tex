@@ -19,7 +19,7 @@
 
 \maketitle
 
-\begin{abstract} This work contains an overview of the client-server paradigm offering, to the public transport companies, a concrete (and open-source) informational system connected with potential clients. This system notifies consumers about the traveling schedule for the current day, the available means of transport (e.g., trains) associated with their time and location, and other related knowledge such as status of departure/arrival and vehicle identification. Any user can report late arrivals, but in a controlled manner such that the misleading records are checked and ignored, if necessary. The application achieves great communication speed with the customers, minimizing the risk of damage to the data quality. Currently, the server application is continuously running and ready to serve queries. One particular limitation regarding security is the single point of failure. With some financial investments, the code base could be generalized to integrate multiple server ends. This paper represents an implementation reference for network programming and administration and a complete review of my repository.
+\begin{abstract} This work contains an overview of the client-server paradigm offering, to the public transport companies, a concrete (and open-source) informational system connected with potential clients. This system notifies consumers about the traveling schedule for the current day, the available means of transport (e.g., trains) associated with their time and location, and other related knowledge such as status of departure/arrival and vehicle identification. Any user can report late arrivals, but in a controlled manner such that the misleading records are checked and ignored, if necessary. The application achieves great communication speed with the customers, minimizing the risk of damage to the data quality. Currently, the server application is continuously running and ready to serve queries. One particular limitation regarding security is the single point of failure. With some financial investments, the code base could be generalized to integrate multiple server ends. This paper represents an implementation reference for network programming and administration, completely reviewing my repository.
 
 \keywords{Server \and Client \and Application level \and Transport level \and I/O multiplexing \and TCP \and UDP \and Thread \and Socket }
 \end{abstract}
@@ -29,9 +29,9 @@
 
 \section{Introduction}
 
-"Romanian Railways" involves compiling two programs: one for the server and the other for the client(s). Now, it is in a professionally working state, with one server instance running indefinitely at 10.100.0.30, port 2970. The maximum capacity of connected users is 1024 per server instance, which can increase in case of growth in resources allocated for this project.
+"Romanian Railways" is a multi-paradigm project that involves compiling two programs: one for the server and the other for the client(s). It is in a professional working state, with one server instance running indefinitely at $10.100.0.30:2970$. The maximum capacity of connected users is 1024 per server instance. The server holds traveling schedules for the current date, and clients can query routes from a specific location or time and report delays.
 
-The current document continues to explain some requirements and the logic behind the code. The following section will explore a short list of the adopted technologies. Choosing the right tools will determine the overall quality of the apps. In the third chapter, you may find the structure of the server application and some illustrations of the routines executed. Following this, additional details, experiments, and observations are analyzed. The advantages and roles of the implementation decisions are discussed. This part opens up the API definitions at the application level. The conclusions will summarize my project and propose some scenarios where the "RR application" could be helpful.
+This document continues to explain some requirements and the logic behind the code. The following section will explore a short list of the adopted technologies. Choosing the right tools will determine the overall quality of the apps. In the third chapter, you may find the structure of the server application and a illustration of the routines executed. Following this, additional details, experiments, and observations are analyzed. The advantages and roles of the implementation decisions are discussed. This part opens up the API definitions at the application level. Last but not least, the conclusions will summarize my project and propose some scenarios where the "RR-application" could be helpful.
 
 \subsection{Motivation}
 
@@ -39,202 +39,198 @@ The entire repository is a matter of personal interest for the "Computer Network
 
 \section{Applied Technologies}
 
-Three main core objectives were followed in the development: speed, correctness, and security. Therefore C programming language was elected because:
+In the development, three main core objectives were followed: speed, correctness, and security. Therefore, the C programming language was elected because:
 \begin{itemize}
-    \item it is one of the fastest compiled languages
-    \item it supplies network management resources, such as threads and sockets
-    \item it delivers simple syntax, yet highly customizable flags and options (very important for the non-blocking calls)
-    \item it has all the necessary tools to assure the objectives previously considered; a more advanced language like C++ would add an layer of unnecessary complexity
+  \item it is one of the fastest compiled languages;
+  \item it supplies network management resources, such as threads and sockets;
+  \item it delivers simple syntax, yet highly customizable flags and options (important for the non-blocking calls);
+  \item it has all the necessary tools to assure the objectives previously considered; a more advanced language like C++ would add an layer of unnecessary complexity.
 \end{itemize}
 
-For reasons later argued, the server has to be concurrent. To attain this, threads were selected to handle this requirement; they are a multiple-purpose mechanism, as we'll observe in the final composition of the program. Last but not least, the exchange of messages between the customers and the server is realized with sockets through TCP and UDP, transport-level protocols.
+The server application must be concurrent; otherwise, a queue of clients would be formed, and their requests would be delivered slowly. A thread-based schema benefits from multiple gains over process copies.
+
+Messages are exchanged between customers and the server using sockets with both TCP and UDP.
 
 %%------------------------------------------------
 %%------------------------------------------------
 
 \section{Application Structure}
 
-This section covers fundamental information about the internal mechanism of the project, accompanied by a simplified, user-oriented guide. Both parts will consolidate the logic of the operations defined in the server's API.
+The diagram of the core procedures is on the next page. Breaking down the components into POSIX's standard syntax will form a compact overview that is easy to follow.
 
-\subsection{The order of execution}
+Let us start commenting "server.c"; there are two main frames: the initialization stage and the loop. The initialization begins by creating an empty set of socket descriptors - one per customer. Then, it sets up two non-blocking sockets by linking them with the server's address. The first socket is the preliminary step of the TCP's three-way handshake (listens for connections), while the second involves UDP transmissions.
 
-The server's program consists of multiple calls and has a rich structure. Because of this, on the next page, we will examine a diagram of the core procedures. Breaking down the components of the application(s) into POSIX's standard syntax will form a compact overview that is easy to follow. Doing this also allows us to mark the order of the events: the closer to the top of the figure a function is, the earlier it is being called. Arrows don't necessarily imply succession; they're being used to suggest what to consider.
+The initialization stage ends when the initial process is divided into three threads; thus, the loop starts. The root thread (the middle one) accepts new connections, while the others organize the data travel. The ioctl() function adds the non-blocking feature to the latest accepted clients' sockets. They will also be placed in the socket set initialized earlier. The following thread to be discussed (the one from the right) takes advantage of this set. The socket operations will always be non-blocking. That's why I/O multiplexing is necessary. Briefly, the communication with the clients uses TCP here. The last thread (the far left one) also has non-blocking reads and writes but with UDP datagrams.
 
 \newpage
 \begin{figure}[!h]
-    \includegraphics[width=\textwidth]{RR execution diagram.drawio.png}
-    \caption{Execution illustration} \label{fig1}
+  \includegraphics[width=\textwidth]{RR execution diagram.drawio.png}
+  \caption{Execution illustration, made with \cite{diagram-site}} 
+  \label{fig:exe}
 \end{figure}
 
-Let's start commenting "server.c" and then focus on the client side. This drawing is split into two main frames: the initialization stage and the loop. The initialization begins by creating an empty set of socket descriptors - a set that keeps track of the customers. Then, it sets up two non-blocking sockets by linking them with the server's address (setsockopt(), SO\_REUSEADDR). The first socket is the preliminary step of the TCP's three-way handshake (listens for connections), while the second one involves the UDP transmissions.
+Note that running\_condition() always returns true, with one exception: an "administrative key" that stops the algorithm and closes the server. The file "include/dev/key.txt" influences the behavior of the about function. The administrator could close the server if he empties the content of this file. If no changes are registered to it, the server will continue running.
 
-The initialization stage ends when the initial process is divided into three threads. Now, the server enters in a pseudo-infinite loop. Why pseudo? If an admin logs-in, running\_condition() could return false and stop the algorithm. The root thread (the middle one) accepts new connections, while the others organize the data travel. The ioctl() function adds the non-blocking feature to the latest accepted clients' sockets. They will also be declared in the set initialized earlier. The following thread to be discussed (the one from the right) takes advantage of this set. The socket operations will always be in a non-blocking state. That's why the I/O multiplexing joined the game. Briefly, clients are treated TCP likewise here, and similarly to this, the last thread (the far left one) has the same purpose but uses the UDP communication.
-
-Considering the server's structure, it follows that every client needs two sockets. Depending on his request type, his message is sent to one of the travel-responsible threads using either read() and write() or sendto() and recvfrom(). The client application also runs in a loop, granting the user the ability to explore different updates live. Note that the client's connection-less socket is associated with a connection operation (this article explains more about this phenomenon \cite{udp-connect}).
-
-\subsection{Use case diagram}
-
-\begin{figure}[!h]
-    \includegraphics[width=\textwidth]{RR use case diagram.drawio.png}
-    \caption{Use case diagram} \label{fig2}
-\end{figure}
-
-Keeping the server up allows multiple consumer connections. Those can be categorized as observers or reporters. Reports implies that at least one of their reports was accepted in the system. Everyone receives the demanded data and has the ability to call the report function. But only reporters can impact the schedule.
+Considering the server's structure, every client needs two sockets. Depending on their request, the message is sent using either read() and write(), or sendto() and recvfrom(). The client application also runs in a loop, allowing the user to explore different updates live. Note that the client's connection-less socket is associated with connect() (more here: \cite{udp-connect}).
 
 %%------------------------------------------------
 %%------------------------------------------------
 
 \section{Implementation Aspects}
 
-The base of the current code follows the TCP stack model, but with a refined blueprint, outlined in the following subsections. 
+The current code's base follows the TCP stack model but with a refined blueprint outlined in the following subsections.
 
 \subsection{Concurrency schema}
 
-The server application must be concurrent, otherwise a queue of clients would be formed and their requests will be delivered slowly. The following list of strategies were evaluated in our build:
+The following list of strategies were evaluated in the latest release:
 \begin{itemize}
-    \item pre-forking
-    \item pre-threading
-    \item fork per client
-    \item thread per client
+  \item pre-forking;
+  \item pre-threading;
+  \item fork per client;
+  \item thread per client.
 \end{itemize}
 
-Using threads over child processes is due to their "shared memory" character (please also note: \cite{fork-vs-thread}). Even if a child process is "copy on write" optimized, it is not the best choice for a long-term running server which frequently updates all of the data. 
+Using threads over child processes is due to their "shared memory" character (please also note: \cite{fork-vs-thread}). Even if a child process is "copy on write" optimized, it is not the best choice for a long-term running server that frequently updates all of the data. 
 
-What about the "pre-threading"? Approaching this requires to fix a specific number of threads, say $x$, which could be overwhelm by $x + 1$ clients. This fault could be countered with adding threads for the exceeding number of customers. Theoretically speaking, this would represent the obvious choice if the security means are ignored. As previously stated, security is attained using two different servers which have different hardware specifications. The constant number of threads has to adapt for the machines with different components, acknowledging the fact that in the future it is intended to increase this security factor by adding another running instances of the server.
+What about the "pre-threading"? Approaching this requires fixing a specific number of threads, say $x$, which could be overwhelmed by $x + 1$ clients. This fault could be countered by adding threads for exceeding customers. Theoretically speaking, this is the obvious choice. But there is a catch: hardware. Having too many threads could slow down the computing power drastically. Knowing that the server application should be compatible with systems with a limited number of cores, this approach is not optimal. What if multiple server instances will be running in sync in the future? The constant number of threads has to adapt to machines with different components.
 
-So, the final configuration is a hardware-portable combination of the second and forth approaches. The server starts with three threads. Let the basic iterative TCP server be our guide for now (an example can be viewed here: \cite{course} - week 5). It has to accept connections, to manage descriptors, and also to send data. Wouldn't it be faster to run these concurrently? The initial three threads of the server precisely solves these tasks. One thread takes care of the connections, another checks which customers are ready to be dealt with, and the last one's role is to provide a gateway for connection-less requests.
-
-\subsection{Transport protocol}
-
-The transport layer uses a combination of TCP and UDP, where their advantages were exploited for the appropriate situations in the code.
-
-The TCP protocol is used for the commands that influence the server's data. Being a secure protocol, TCP provides acknowledgments for all the transmitted messages. However, it implies an increased amount of time, which proposes the usage of the UDP protocol. TCP is a robust mechanism which assures correctness of transmissions, which is mandatory for clients' reports. But, in cases of simpler queries, it is preferred a faster communication. If the communication fails, it can be simply readdressed by the consumer.
-
-Wrong outputs were avoided. If nothing is received at one end the clients has to resend the same query. If something wrong is received at server's end, it is capable of interpreting and remodel the request. The only way to check if an output is correct on the customer's end, is to resend the query.
-
-Briefly, the clients use TCP when sending requests to change the trains' schedule, and UDP for information retrieval.
+So, the final configuration is a hardware-portable combination of the second approach and I/O multiplexing. The server works with only three threads. Let the basic iterative TCP server be our guide for now (an example can be viewed here: \cite{course} - week 5). It has to accept connections, manage descriptors, and send data. Wouldn't it be faster to run these concurrently? The previously discussed picture precisely foreshadowed this. One thread takes care of the connections, another checks which customers are ready to be dealt with, and the last one's role is to provide a gateway for connection-less requests.
 
 \subsection{I/O Multiplexing}
 
-This topic improves further the speed of the client-server correspondence. The select() primitive with unblocking I/O operations is considered to bring exceptional results, (accordingly to \cite{non-block-select} and \cite{course} - week 7). What is better than an iterative server with I/O multiplexing? A concurrent one, which uses the same principle.
+This topic further improves the speed of client-server correspondence. The select() primitive with unblocking I/O operations is considered to bring exceptional results (accordingly to \cite{non-block-select} and \cite{course} - week 7). What is better than an iterative server with I/O multiplexing? A concurrent one that uses the same principle.
+
+\subsection{Transport protocol}
+
+The transport layer uses a combination of TCP and UDP, and the code exploits their advantages in the appropriate situations.
+
+The TCP protocol is used for commands that influence the server's data. Being a secure protocol, TCP provides acknowledgments for all transmitted messages. However, it implies an increased amount of time, which proposes the usage of the UDP protocol. TCP is a robust mechanism that assures the correctness of transmissions, which is mandatory for clients' reports. But in cases of straightforward queries, faster communication is preferred. If the communication fails, it can be readdressed by the consumer.
+
+Wrong outputs were avoided. The clients must resend the same query if nothing is received at one end. If something false is received at the server's end, it can interpret and remodel the request. The only way to check if an output is correct on the customer's end is to resend the query.
+
+Briefly, the clients use TCP to send requests to change the trains' schedule and UDP to retrieve information.
 
 \subsection{Innovative scores}
 
-Inclusion of an administrator login is considered a simple, yet useful contribution. Instead of manually crashing the server, an admin could insert a key into a specific file, monitored by the application. If that key is "1" everything will work as planned - the system will be online. In the opposite case, servers automatically shuts down, avoiding memory leaks and errors.
+Including an "administrative key" is a simple yet valuable contribution. Instead of manually crashing the server, an admin uses the key, running\_condition() returns false, and the server automatically shuts down, avoiding memory leaks and errors.
 
-One other interesting feature is the second end of the server. By default, the initialization of the data is done at 10.100.0.30 - the primary instance of the server - which is always online. The second end is being held by my personal computer, and instead of manually copying the data files, it communicates with the primary instance. Doing so we're keeping a ready-to-replace and functional copy.
+A unique feature is the data generation. This project allows the network administrator to either randomly generate the schedules or to provide a file with this data. By default, the server creates new routes daily, which is done using a pseudo-random number generator, Mersenne Twister. Firstly, the traveling schedule is locatated in "include/data/" (stored as xml/txt files) and then processed by the server in an actual buffer.
+
+This mechanism is executed at maintenance time and initialization. "Maintenance" is a routine that runs once per day and updates the schedule for the current date. At 00:00 GMT+2, it is being set to close all sockets, communication channels, and threads. All the data from the previous day is then flushed and replaced by new routes. These routes are randomly generated if in the server initialization were too. Otherwise, the server looks into the file passed at initialization and checks if there are changes. The new itineraries replace everything in that unique file.
+
+To increase transmission speed, the data's size has to be minimal. In this case, an array of routes is minimized by having each element as light as possible. A route is designed to only weight eight bytes. Why can't it be lower than that? Because it has to contain information about departures' location and time (analogous to arrivals), status, and the vehicle's id. The last two need to be separated fields, but location and time for departure/arrival are merged into only one address. So, the total traveling schedule's size is only 80 MB at maximum. A complete walkthrough of these concepts can be found in "docs/brainstorm.md".
+
+\newpage
+\section{Application protocol}
 
 \subsection{Definitions}
 
-In the succeeding lines we'll describe the dialect used in the application protocol. 
+In the succeeding lines the dialect used in the application protocol is described.
 
 \begin{itemize}
-    \item route = an itinerary is from point A to point B and no other points. In memory it is composed of an id\_train, two location points, two time delimitations and a status field, forming a rr\_route struct.
+  \item route = an itinerary is from point A to point B with no other points in between (A != B). In memory it is composed of an vehicle number, two location points, two time delimitations and a status field, forming a rr\_route struct.
 
-    \item locations types: departures, arrivals. They are being recognized as integers.
+  \item locations types: departures, arrivals. They are being recognized as integers.
 
-    \item estimated times = initial times defined by the generated schedule
-    \item confirmed times = estimated times +/- delays. A clear distinction is made between "estimated" and "confirmed". The former has an information initializing character, while the second emphasizes that the information is a subject to modifications.
+  \item estimated times = initial times defined by the generated schedule
+  \item confirmed times = estimated times +/- delays. A clear distinction is made between "estimated" and "confirmed". The former has an information initializing character, while the second emphasizes that the information is a subject to modifications.
     
-    \item times types: confirmed departure time, estimated departure time, confirmed arrival time, estimated arrival time.
+  \item times types: confirmed departure time, estimated departure time, confirmed arrival time, estimated arrival time.
     
-    \item status of a train has two fields - each indicates whether it has left the departure location or arrived at destination. Both will be as a boolean variable int the rr\_status struct.
+  \item status of a train = indicates if the current vehicle whether it has left the departure location or arrived at destination. Both will be as a boolean variable int the rr\_status struct.
+
+  \item usht = unsigned short
+  \item the time of the application is GMT+2 - Romania's time. 
+  \item the trains, for more than three hours late, are considered faulted.
 \end{itemize}
 
-Server's activity consists of:
-\begin{itemize}
-    \item sending data to clients
-    \item reading data from XML files
-    \item receiving reports from clients
-    \item updating the data (delays, arrival estimation) based on the reports
-\end{itemize}
+\subsection{API}
 
-The time of the application is the current Romania's time (GMT+2). It is considered that the trains that are late for more than three hours are defect.
-
-Client's application builds the final string messages based on the data returned by the server. 
-
-%%------------------------------------------------
-%%------------------------------------------------
-
-\subsection{Application protocol}
+The following commands should be perceived from the client's point of view.
 
 \begin{enumerate}
-   \item \begin{itemize} \item NAME: routes - the complete trains' schedule for the present day
-            \item SYNOPSIS: struct rr\_route* routes(int location\_departure, int location\_arrival)  
-            \item DESCRIPTION: Receives as parameters the desired path of the traveler and iterates through the routes for matching location settings. Not finding any such itinerary is considered an failure.
-            \item RETURN VALUE: On success, routes() returns a pointer to a block of memory being composed of the schedule's data. On failure, it returns a NULL-pointer.
-            \item NOTES: If one of the descriptors is invalid the function fails. 
-            \item EXAMPLES: \begin{lstlisting}[language=C++]
-    #define IASI 101
-    #define BUCHAREST 100
-    struct rr_route* it = routes(IASI, BUCHAREST);
-    while(it) {
-        // server sends the data 
-        write(sd, it, sizeof(struct rr_route));
-        it++; 
-    }
-            \end{lstlisting}
-            \vspace{0.3cm}
-   \end{itemize}
+  \item \begin{itemize} 
+    \item NAME: routes - trains departing from A to B for the current day.
+    \item SYNOPSIS: struct rr\_route* routes(usht location\_departure, usht location\_arrival);
+    \item DESCRIPTION: Receives as parameters the poitns A and B (the desired travel path) and iterates through the all the routes for matching location settings.
+    \item RETURN VALUE: On success, routes() returns an integer - the count of searched routes - and a pointer to the schedule's data. On failure, it returns 0 and a NULL-pointer.
+    \item NOTES: It follows the UDP transmission type. If one of the descriptors is invalid the function fails.
+    \item ANALOGY:
+      \begin{lstlisting}[language=C++]
+        unsigned short IASI = 23;
+        unsigned short BUCHAREST = 24;
+        struct rr_route* it = routes(IASI, BUCHAREST);
+        while(it){
+          sendto(sd, *it, sizeof(struct rr_route));
+          it++; 
+        }
+      \end{lstlisting}
+    \vspace{0.3cm}
+  \end{itemize}
    
-   \item \begin{itemize} \item NAME: departures - routes and trains in the next hour
-            \item SYNOPSIS: struct rr\_route* departures(int location\_departure)  
-            \item DESCRIPTION: It iterates through  all the routes and checks the departure locations field for the integer provided. If found, it returns a not NULL-pointer. 
-            \item RETURN VALUE: On success, departures() returns a pointer to a block of memory - a list of the routes matching the argument. On failure, it returns a NULL-pointer.
-            \item NOTES: the extra data is filtered out by the client's application
-            \vspace{0.3cm}
-   \end{itemize}
+  \item \begin{itemize}
+    \item NAME: departures - trains departing from A to anywhere in the next hour.
+    \item SYNOPSIS: struct rr\_route* departures(usht location\_departure);
+    \item DESCRIPTION: It iterates through all the routes and checks the current time of the day, the departure location field, alongside its corresponding time. 
+    \item RETURN VALUE: On success, departures() returns an integer - the count of searched routes - and a pointer to the list of the routes matching the above requirements. On failure, it returns 0 and NULL-pointer.
+    \item NOTES: It follows the UDP transmission type.
+    \vspace{0.3cm}
+  \end{itemize}
    
-   \item \begin{itemize} \item NAME: arrivals - routes and trains in the next hour
-            \item SYNOPSIS: struct rr\_route* arrivals(int location\_arrival)
-            \item DESCRIPTION: It iterates through  all the routes and checks the arrival locations field for the integer provided. If found, it returns a not NULL-pointer. 
-            \item RETURN VALUE: On success, arrival() returns a pointer to a block of memory - a list of the routes matching the argument. On failure, it returns a NULL-pointer.
-            \item NOTES: the extra data is filtered out by the client's application
-            \vspace{0.3cm}
-   \end{itemize}
+  \item \begin{itemize}
+    \item NAME: arrivals - trains departing from anywhere to B in the next hour.
+    \item SYNOPSIS: struct rr\_route* arrivals(usht location\_arrival);
+    \item DESCRIPTION: It iterates through  all the routes and checks the current time of the day, the arrival location field, alongside its corresponding time. 
+    \item RETURN VALUE: On success, arrivals() returns an integer - the count of searched routes - and a pointer to the list of the routes matching the above requirements. On failure, it returns 0 and NULL-pointer.
+    \item NOTES: It follows the UDP transmission type.
+    \vspace{0.3cm}
+  \end{itemize}
    
-   \item \begin{itemize} \item NAME: report - sends requests to update the schedule and related buffers.
-            \item SYNOPSIS: void report(int id\_train, int minutes)  
-            \item DESCRIPTION: It iterates through  all the routes to find the id of the train. If it is found, the status is checked and set accordingly.
-            \item ERRORS: \begin{itemize}
-                \item RR\_ERR\_REP0 - the id\_train is an invalid id. 
-                \item RR\_ERR\_REP1 - the id\_train is marked as arrived. 
-                \item RR\_ERR\_REP2 - the id\_train is not marked as left.
-                \item RR\_ERR\_REP3 - more than 180 minutes are reported.
-            \end{itemize}
-            \item NOTES: It follows the TCP transmission type.
-            \item EXAMPLES: 
-    // let 100 be an arrived train, 101 a train marked as left but not arrived, 102 a train not marked as left  
-    \begin{lstlisting}[language=C++]
-    report(100, 5);     // fails
-    report(101, 5);     // works
-    report(101, 181);   // marked as defect
-    report(102, 15);    // fails
-            \end{lstlisting}
-            \vspace{0.3cm}
-   \end{itemize}
+  \item \begin{itemize}
+    \item NAME: report - sends requests to update a route's data.
+    \item SYNOPSIS: bool report(usht id\_train, usht minutes);
+    \item DESCRIPTION: If id\_train is smaller than the routes' count, it is indexed in the routes' array to search for the delay\_data field. If it is not already faulted, the delay time is updated it accordingly to client's request.
+    \item NOTES: It follows the TCP transmission type. If the above conditions are not validated, the method returns false.
+    \item ANALOGY:
+      \begin{lstlisting}[language=C++]
+        /* let 100 be an arrived train,
+        101 a departed train not marked as arrived, 
+        102 a train not marked as departed*/
+        
+        report(100, 5);     // fails
+        report(101, 5);     // works
+        report(101, 181);   // works, faulted
+        report(102, 15);    // fails
+      \end{lstlisting}
+    \vspace{0.3cm}
+  \end{itemize}
    
-   \item \begin{itemize} \item NAME: quit - allows the consumer to close the application
-            \item SYNOPSIS: void quit()  
-            \item DESCRIPTION: This function is definite in closing the communication with the server. Once typed the application will close.
-            \item NOTES: It follows the TCP transmission type.
-            
-            If the server shuts down before the client, quit() saves the user from any potential bug.
-   \end{itemize}
+  \item \begin{itemize}
+    \item NAME: quit - allows the consumer to close the application.
+    \item SYNOPSIS: bool quit();  
+    \item DESCRIPTION: This function is definite in closing the communication with the server. Once typed the application will close.
+    \item NOTES: It follows the TCP transmission type. If the client's application crashes unexpectedly with no quit() call, the server is notified about the event and displays a warning in the console. The only time when it returns false is when server crashes before customer exits.
+  \end{itemize}
 \end{enumerate}
 
 %%------------------------------------------------
 %%------------------------------------------------
 
+\newpage
 \section{Conclusions}
 
-Finally, this work concludes as a reference for the applied principles of network management. It showcases a fast, correct and secure implementation that uses a lot of different approaches to maximize these goals. To increase speed it was utilized: a concurrent server, UDP and a hybridized TCP with I/0 multiplexing. The durability is maintained by the second running server.
+For what is this project suitable for?
+
+Clearly, its rich documentation and open-source code suit it for studying low-level C's network API. 
+
+Since it includes a complete implementation, it could be professionally used right now in scenarios like public transport, production industries, managerial work, personal lists, etc. The design of "trains" can be extrapolated to states. Any industry whose tasks can be tracked using schedules can use this application. The only change produced is the data encoding because the system is viable and can be generalized easily.
+
+Finally, this work concludes as a reference for the applied principles of network management. It showcases a fast, correct, and secure implementation that uses many different approaches to maximize these goals. To increase speed, a pre-threaded execution, UDP, and a hybridized TCP with I/0 multiplexing were utilized.
 
 \begin{credits}
-    \subsubsection{\ackname} This open-source project has no financial support. Improvements and updates are expected only for the following month.
-    \subsubsection{\discintname}
-    There are no competing interests to declare, that could be relevant to the content of this article.
-    \end{credits}
+  \subsubsection{\ackname} This open-source project has no financial support. Improvements and updates are no longer expected.
+  \subsubsection{\discintname} There are no competing interests to declare, that could be relevant to the content of this article.
+\end{credits}
     
 
 %%------------------------------------------------

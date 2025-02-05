@@ -43,7 +43,8 @@ Please consult some definitions from [here](./docs/brainstorm.md)
 ### Security
 
 - specific procedures for possible errors
-- solution if one party stops responding
+- solutions if one party stops responding
+- test driven-development
 
 ## Limitations
 
