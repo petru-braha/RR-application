@@ -4,6 +4,15 @@ You can find the romanian version of this document [here](./docs/README_RO.md).
 
 https://github.com/user-attachments/assets/b17811d2-45a2-4e7a-8d8b-987f20e0e028
 
+## Connect
+
+To establish connection with my server make sure to:
+
+- install [openvpn3](https://community.openvpn.net/openvpn/wiki/OpenVPN3Linux)
+- start a session using this vpn [key](./docs/vpnkey.ovpn) (openvpn3 session-start --config docs/vpnkey.ovpn)
+- send a mail at petrubraha@gmail.com for the credentials asked at the previous step
+- compile and run the client application with the following arguments: '10.100.0.30' and '2970'
+
 ## Main files
 
 - [official documentation](./docs/RR_documentation.pdf)

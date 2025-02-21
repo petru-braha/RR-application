@@ -4,6 +4,15 @@ Puteți găsi versiunea acestui document in engleza [aici](./../README.md).
 
 https://github.com/user-attachments/assets/b17811d2-45a2-4e7a-8d8b-987f20e0e028
 
+## Conectare
+
+Pentru a stabili conexiunea cu serverul meu asigurați-vă că:
+
+- instalați [openvpn3](https://community.openvpn.net/openvpn/wiki/OpenVPN3Linux)
+- porniți o sesiune folosind acesta [cheie](./docs/vpnkey.ovpn) (openvpn3 session-start --config docs/vpnkey.ovpn)
+- trimiteți un e-mail la petrubraha@gmail.com pentru acreditările solicitate la pasul anterior
+- compilați și să rulați aplicația client cu următoarele argumente: „10.100.0.30” și "2970
+
 ## Fișiere principale
 
 - [documentație oficială](./RR_documentation.pdf)
